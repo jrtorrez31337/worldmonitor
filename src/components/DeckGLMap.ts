@@ -471,7 +471,6 @@ export class DeckGLMap {
       renderWorldCopies: false,
       attributionControl: false,
       interactive: true,
-      trackResize: false,
       ...(MAP_INTERACTION_MODE === 'flat'
         ? {
           maxPitch: 0,
