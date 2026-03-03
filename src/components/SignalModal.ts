@@ -21,7 +21,7 @@ export class SignalModal {
       <div class="signal-modal">
         <div class="signal-modal-header">
           <span class="signal-modal-title">🎯 ${t('modals.signal.title')}</span>
-          <button class="signal-modal-close">×</button>
+          <button class="signal-modal-close" aria-label="Close">×</button>
         </div>
         <div class="signal-modal-content"></div>
         <div class="signal-modal-footer">
@@ -192,7 +192,7 @@ export class SignalModal {
       detailsHtml += `
         <div class="signal-context-item">
           <span class="context-label">${t('modals.signal.source')}</span>
-          <span class="context-value">${escapeHtml(cascade.sourceName)} (${cascade.sourceType})</span>
+          <span class="context-value">${escapeHtml(cascade.sourceName)} (${escapeHtml(cascade.sourceType)})</span>
         </div>
         <div class="signal-context-item">
           <span class="context-label">${t('modals.signal.countriesAffected')}</span>
@@ -232,7 +232,7 @@ export class SignalModal {
   public playSound(): void {
     if (this.audioEnabled && this.audio) {
       this.audio.currentTime = 0;
-      this.audio.play().catch(() => {});
+      this.audio.play()?.catch(() => {});
     }
   }
 
@@ -295,7 +295,7 @@ export class SignalModal {
           ${locationData.lat && locationData.lon ? `
             <div class="signal-location">
               <button class="location-link" data-lat="${locationData.lat}" data-lon="${locationData.lon}">
-                📍 ${t('modals.signal.viewOnMap')}: ${locationData.regionName || `${locationData.lat.toFixed(2)}°, ${locationData.lon.toFixed(2)}°`}
+                📍 ${t('modals.signal.viewOnMap')}: ${locationData.regionName ? escapeHtml(locationData.regionName) : `${locationData.lat.toFixed(2)}°, ${locationData.lon.toFixed(2)}°`}
               </button>
             </div>
           ` : ''}

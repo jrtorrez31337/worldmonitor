@@ -269,10 +269,10 @@ const ALLOWED_DOMAINS = [
   'www.brasilparalelo.com.br',
   // Mexico & LatAm Security
   'mexiconewsdaily.com',
-  'animalpolitico.com',
-  'www.proceso.com.mx',
-  'www.milenio.com',
   'insightcrime.org',
+  'www.primicias.ec',
+  'www.infobae.com',
+  'www.eluniverso.com',
   // Additional
   'news.ycombinator.com',
   // Finance variant
@@ -332,6 +332,14 @@ const ALLOWED_DOMAINS = [
   'viewfromthewing.com',
   'www.aviationpros.com',
   'www.aviationweek.com',
+  // US broadcast & print news
+  'www.pbs.org',
+  'feeds.abcnews.com',
+  'feeds.nbcnews.com',
+  'www.cbsnews.com',
+  'moxie.foxnews.com',
+  'feeds.content.dowjones.io',
+  'thehill.com',
 ];
 
 export default async function handler(req) {

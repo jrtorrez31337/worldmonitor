@@ -203,6 +203,13 @@
   border-color: var(--text-faint);
 }
 
+.cdp-share-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+}
+
 .cdp-card {
   background: color-mix(in srgb, var(--surface) 70%, transparent);
   border: 1px solid var(--border-subtle);

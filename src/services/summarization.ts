@@ -12,6 +12,7 @@ import { SITE_VARIANT } from '@/config';
 import { BETA_MODE } from '@/config/beta';
 import { isFeatureAvailable, type RuntimeFeatureId } from './runtime-config';
 import { trackLLMUsage, trackLLMFailure } from './analytics';
+import { getCurrentLanguage } from './i18n';
 import { NewsServiceClient, type SummarizeArticleResponse } from '@/generated/client/worldmonitor/news/v1/service_client';
 import { createCircuitBreaker } from '@/utils';
 import { buildSummaryCacheKey } from '@/utils/summary-cache-key';
@@ -106,12 +107,15 @@ async function tryBrowserT5(headlines: string[], modelId?: string): Promise<Summ
     }
     lastAttemptedProvider = 'browser';
 
+    const lang = getCurrentLanguage();
     const combinedText = headlines.slice(0, 5).map(h => h.slice(0, 80)).join('. ');
-    const prompt = `Summarize the most important headline in 2 concise sentences (under 60 words): ${combinedText}`;
+    const prompt = lang === 'fr'
+      ? `Résumez le titre le plus important en 2 phrases concises (moins de 60 mots) : ${combinedText}`
+      : `Summarize the most important headline in 2 concise sentences (under 60 words): ${combinedText}`;
 
     const [summary] = await mlWorker.summarize([prompt], modelId);
 
-    if (!summary || summary.length < 20 || summary.toLowerCase().includes('summarize')) {
+    if (!summary || summary.length < 20 || summary.toLowerCase().includes('summarize') || summary.toLowerCase().includes('résumez')) {
       return null;
     }
 

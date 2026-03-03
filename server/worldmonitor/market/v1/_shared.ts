@@ -31,6 +31,18 @@ function getRelayHeaders(): Record<string, string> {
 
 export const UPSTREAM_TIMEOUT_MS = 10_000;
 
+/**
+ * Defensive parser for repeated-string query params.
+ * The sebuf codegen assigns `params.get("symbols")` (a string) to a field
+ * typed as `string[]`.  At runtime `req.symbols` may therefore be a
+ * comma-separated string rather than an actual array.
+ */
+export function parseStringArray(raw: unknown): string[] {
+  if (Array.isArray(raw)) return raw.filter(Boolean);
+  if (typeof raw === 'string' && raw.length > 0) return raw.split(',').filter(Boolean);
+  return [];
+}
+
 export async function fetchYahooQuotesBatch(
   symbols: string[],
 ): Promise<{ results: Map<string, { price: number; change: number; sparkline: number[] }>; rateLimited: boolean }> {
@@ -105,13 +117,20 @@ export async function fetchFinnhubQuote(
       headers: { Accept: 'application/json', 'User-Agent': CHROME_UA, 'X-Finnhub-Token': apiKey },
       signal: AbortSignal.timeout(UPSTREAM_TIMEOUT_MS),
     });
-    if (!resp.ok) return null;
+    if (!resp.ok) {
+      console.warn(`[Finnhub] ${symbol} HTTP ${resp.status}`);
+      return null;
+    }
 
     const data = await resp.json() as { c: number; d: number; dp: number; h: number; l: number; o: number; pc: number; t: number };
-    if (data.c === 0 && data.h === 0 && data.l === 0) return null;
+    if (data.c === 0 && data.h === 0 && data.l === 0) {
+      console.warn(`[Finnhub] ${symbol} returned zeros (market closed or invalid)`);
+      return null;
+    }
 
     return { symbol, price: data.c, changePercent: data.dp };
-  } catch {
+  } catch (err) {
+    console.warn(`[Finnhub] ${symbol} error:`, (err as Error).message);
     return null;
   }
 }
@@ -178,22 +197,33 @@ export async function fetchYahooQuote(
       const data: YahooChartResponse = await resp.json();
       const parsed = parseYahooChartResponse(data);
       if (parsed) return parsed;
+    } else {
+      console.warn(`[Yahoo] ${symbol} direct HTTP ${resp.status}`);
     }
-  } catch { /* fall through to relay */ }
+  } catch (err) {
+    console.warn(`[Yahoo] ${symbol} direct error:`, (err as Error).message);
+  }
 
   // Fallback: Railway relay (different IP, not rate-limited by Yahoo)
   const relayBase = getRelayBaseUrl();
-  if (!relayBase) return null;
+  if (!relayBase) {
+    console.warn(`[Yahoo] ${symbol} relay skipped: WS_RELAY_URL not set`);
+    return null;
+  }
   try {
     const relayUrl = `${relayBase}/yahoo-chart?symbol=${encodeURIComponent(symbol)}`;
     const resp = await fetch(relayUrl, {
       headers: getRelayHeaders(),
       signal: AbortSignal.timeout(UPSTREAM_TIMEOUT_MS),
     });
-    if (!resp.ok) return null;
+    if (!resp.ok) {
+      console.warn(`[Yahoo] ${symbol} relay HTTP ${resp.status}: ${await resp.text().catch(() => '')}`);
+      return null;
+    }
     const data: YahooChartResponse = await resp.json();
     return parseYahooChartResponse(data);
-  } catch {
+  } catch (err) {
+    console.warn(`[Yahoo] ${symbol} relay error:`, (err as Error).message);
     return null;
   }
 }

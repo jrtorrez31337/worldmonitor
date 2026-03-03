@@ -71,6 +71,7 @@ export class CountryDeepDivePanel implements CountryBriefPanel {
   private marketsBody: HTMLElement | null = null;
   private briefBody: HTMLElement | null = null;
   private timelineBody: HTMLElement | null = null;
+  private scoreCard: HTMLElement | null = null;
 
   private readonly handleGlobalKeydown = (event: KeyboardEvent): void => {
     if (!this.panel.classList.contains('active')) return;
@@ -403,6 +404,30 @@ export class CountryDeepDivePanel implements CountryBriefPanel {
     this.renderEconomicIndicators();
   }
 
+  public updateScore(score: CountryScore | null, _signals: CountryBriefSignals): void {
+    if (!this.scoreCard) return;
+    // Partial DOM update: score number, level color, trend, component bars only
+    const top = this.scoreCard.firstElementChild as HTMLElement | null;
+    while (this.scoreCard.childElementCount > 1) {
+      this.scoreCard.lastElementChild?.remove();
+    }
+    if (top) {
+      const updatedEl = top.querySelector('.cdp-updated');
+      if (updatedEl) updatedEl.textContent = `Updated ${this.shortDate(score?.lastUpdated ?? new Date())}`;
+    }
+    if (score) {
+      const band = this.ciiBand(score.score);
+      const scoreRow = this.el('div', 'cdp-score-row');
+      const value = this.el('div', `cdp-score-value cii-${band}`, `${score.score}/100`);
+      const trend = this.el('div', 'cdp-trend', `${this.trendArrow(score.trend)} ${score.trend}`);
+      scoreRow.append(value, trend);
+      this.scoreCard.append(scoreRow);
+      this.scoreCard.append(this.renderComponentBars(score.components));
+    } else {
+      this.scoreCard.append(this.makeEmpty(t('countryBrief.ciiUnavailable')));
+    }
+  }
+
   public updateStock(data: StockIndexData): void {
     if (!data.available) {
       this.renderEconomicIndicators();
@@ -499,6 +524,7 @@ export class CountryDeepDivePanel implements CountryBriefPanel {
   }
 
   private renderLoading(): void {
+    this.scoreCard = null;
     this.content.replaceChildren();
     const loading = this.el('div', 'cdp-loading');
     loading.append(
@@ -533,6 +559,20 @@ export class CountryDeepDivePanel implements CountryBriefPanel {
     });
     this.maximizeButton = maxBtn;
 
+    const shareBtn = this.el('button', 'cdp-action-btn cdp-share-btn') as HTMLButtonElement;
+    shareBtn.setAttribute('type', 'button');
+    shareBtn.setAttribute('aria-label', t('components.countryBrief.shareLink'));
+    shareBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v7a2 2 0 002 2h12a2 2 0 002-2v-7"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>';
+    shareBtn.addEventListener('click', () => {
+      if (!this.currentCode || !this.currentName) return;
+      const url = `${window.location.origin}/?c=${this.currentCode}`;
+      navigator.clipboard.writeText(url).then(() => {
+        const orig = shareBtn.innerHTML;
+        shareBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
+        setTimeout(() => { shareBtn.innerHTML = orig; }, 1500);
+      }).catch(() => {});
+    });
+
     const storyButton = this.el('button', 'cdp-action-btn', 'Story') as HTMLButtonElement;
     storyButton.setAttribute('type', 'button');
     storyButton.addEventListener('click', () => {
@@ -548,10 +588,11 @@ export class CountryDeepDivePanel implements CountryBriefPanel {
         this.onExportImage(this.currentCode, this.currentName);
       }
     });
-    right.append(maxBtn, storyButton, exportButton);
+    right.append(shareBtn, maxBtn, storyButton, exportButton);
     header.append(left, right);
 
     const scoreCard = this.el('section', 'cdp-card cdp-score-card');
+    this.scoreCard = scoreCard;
     const top = this.el('div', 'cdp-score-top');
     const label = this.el('span', 'cdp-score-label', t('countryBrief.instabilityIndex'));
     const updated = this.el('span', 'cdp-updated', `Updated ${this.shortDate(score?.lastUpdated ?? new Date())}`);

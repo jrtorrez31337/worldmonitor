@@ -22,7 +22,7 @@ const WEBCAM_FEEDS: WebcamFeed[] = [
   // Iran Attacks — Tehran, Tel Aviv, Jerusalem
   { id: 'iran-tehran', city: 'Tehran', country: 'Iran', region: 'iran', channelHandle: '@IranHDCams', fallbackVideoId: '-zGuR1qVKrU' },
   { id: 'iran-telaviv', city: 'Tel Aviv', country: 'Israel', region: 'iran', channelHandle: '@IsraelLiveCam', fallbackVideoId: 'gmtlJ_m2r5A' },
-  { id: 'iran-jerusalem', city: 'Jerusalem', country: 'Israel', region: 'iran', channelHandle: '@JerusalemLive', fallbackVideoId: 'JHwwZRH2wz8' },
+  { id: 'iran-jerusalem', city: 'Jerusalem', country: 'Israel', region: 'iran', channelHandle: '@JerusalemLive', fallbackVideoId: 'dpx0xxbPLN8' },
   { id: 'iran-multicam', city: 'Middle East', country: 'Multi', region: 'iran', channelHandle: '@MiddleEastCams', fallbackVideoId: '4E-iFtUM2kk' },
   // Middle East — Jerusalem & Tehran adjacent (conflict hotspots)
   { id: 'jerusalem', city: 'Jerusalem', country: 'Israel', region: 'middle-east', channelHandle: '@TheWesternWall', fallbackVideoId: 'UyduhBUpO7Q' },
@@ -230,7 +230,7 @@ export class LiveWebcamsPanel extends Panel {
     this.destroyIframes();
 
     if (!this.isVisible || this.isIdle) {
-      this.content.innerHTML = '<div class="webcam-placeholder">Webcams paused</div>';
+      this.content.innerHTML = `<div class="webcam-placeholder">${escapeHtml(t('components.webcams.paused'))}</div>`;
       return;
     }
 
@@ -385,7 +385,7 @@ export class LiveWebcamsPanel extends Panel {
       this.idleTimeout = setTimeout(() => {
         this.isIdle = true;
         this.destroyIframes();
-        this.content.innerHTML = '<div class="webcam-placeholder">Webcams paused — move mouse to resume</div>';
+        this.content.innerHTML = `<div class="webcam-placeholder">${escapeHtml(t('components.webcams.pausedIdle'))}</div>`;
       }, this.IDLE_PAUSE_MS);
     };
 

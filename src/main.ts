@@ -47,7 +47,7 @@ Sentry.init({
     /Java bridge method invocation error/,
     /Could not compile fragment shader/,
     /can't redefine non-configurable property/,
-    /Can.t find variable: (CONFIG|currentInset|NP|webkit|EmptyRanges|logMutedMessage|UTItemActionController)/,
+    /Can.t find variable: (CONFIG|currentInset|NP|webkit|EmptyRanges|logMutedMessage|UTItemActionController|DarkReader|Readability|onPageLoaded|Game|frappe|getPercent|ucConfig|\$a)/,
     /invalid origin/,
     /\.data\.split is not a function/,
     /signal is aborted without reason/,
@@ -104,7 +104,7 @@ Sentry.init({
     /shortcut icon/,
     /Attempting to change value of a readonly property/,
     /reading 'nodeType'/,
-    /feature named .pageContext. was not found/,
+    /feature named .\w+. was not found/,
     /a2z\.onStatusUpdate/,
     /Attempting to run\(\), but is already running/,
     /this\.player\.destroy is not a function/,
@@ -144,13 +144,29 @@ Sentry.init({
     /browser\.storage\.local/,
     /The play\(\) request was interrupted/,
     /MutationEvent is not defined/,
+    /Cannot redefine property: userAgent/,
+    /st_framedeep|ucbrowser_script/,
+    /iabjs_unified_bridge/,
+    /DarkReader/,
+    /window\.receiveMessage/,
+    /Cross-origin script load denied/,
+    /orgSetInterval is not a function/,
+    /Blocked a frame with origin.*accessing a cross-origin frame/,
+    /SnapTube/,
+    /sortedTrackListForMenu/,
+    /isWhiteToBlack/,
+    /window\.videoSniffer/,
+    /closeTabMediaModal/,
+    /missing \) after argument list/,
+    /Error invoking postMessage: Java exception/,
+    /IndexSizeError/,
   ],
   beforeSend(event) {
     const msg = event.exception?.values?.[0]?.value ?? '';
     if (msg.length <= 3 && /^[a-zA-Z_$]+$/.test(msg)) return null;
     const frames = event.exception?.values?.[0]?.stacktrace?.frames ?? [];
     // Suppress maplibre internal null-access crashes (light, placement) only when stack is in map chunk
-    if (/this\.style\._layers|reading '_layers'|this\.light is null|can't access property "(id|type|setFilter)", \w+ is (null|undefined)|Cannot read properties of null \(reading '(id|type|setFilter|_layers)'\)|null is not an object \(evaluating '\w{1,3}\.(id|style)|^\w{1,2} is null$/.test(msg)) {
+    if (/this\.style\._layers|reading '_layers'|this\.(light|sky) is null|can't access property "(id|type|setFilter)", \w+ is (null|undefined)|Cannot read properties of null \(reading '(id|type|setFilter|_layers)'\)|null is not an object \(evaluating '\w{1,3}\.(id|style)|^\w{1,2} is null$/.test(msg)) {
       if (frames.some(f => /\/(map|maplibre|deck-stack)-[A-Za-z0-9_-]+\.js/.test(f.filename ?? ''))) return null;
     }
     // Suppress any TypeError that happens entirely within maplibre or deck.gl internals
@@ -282,10 +298,14 @@ if (!('__TAURI_INTERNALS__' in window) && !('__TAURI__' in window) && 'serviceWo
   navigator.serviceWorker.register('/sw.js', { scope: '/' })
     .then((registration) => {
       console.log('[PWA] Service worker registered');
-      setInterval(async () => {
+      const swUpdateInterval = setInterval(async () => {
         if (!navigator.onLine) return;
         try { await registration.update(); } catch {}
       }, 60 * 60 * 1000);
+      // Expose interval ID for cleanup/debugging
+      (window as unknown as Record<string, unknown>).__swUpdateInterval = swUpdateInterval;
     })
-    .catch(() => {});
+    .catch((err) => {
+      console.warn('[PWA] Service worker registration failed:', err);
+    });
 }

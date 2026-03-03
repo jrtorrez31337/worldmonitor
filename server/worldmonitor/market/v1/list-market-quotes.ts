@@ -8,7 +8,7 @@ import type {
   ListMarketQuotesResponse,
   MarketQuote,
 } from '../../../../src/generated/server/worldmonitor/market/v1/service_server';
-import { YAHOO_ONLY_SYMBOLS, fetchFinnhubQuote, fetchYahooQuotesBatch } from './_shared';
+import { YAHOO_ONLY_SYMBOLS, fetchFinnhubQuote, fetchYahooQuotesBatch, parseStringArray } from './_shared';
 import { cachedFetchJson } from '../../../_shared/redis';
 
 const REDIS_CACHE_KEY = 'market:quotes:v1';
@@ -30,7 +30,8 @@ export async function listMarketQuotes(
   req: ListMarketQuotesRequest,
 ): Promise<ListMarketQuotesResponse> {
   const now = Date.now();
-  const key = cacheKey(req.symbols);
+  const parsedSymbols = parseStringArray(req.symbols);
+  const key = cacheKey(parsedSymbols);
 
   // Layer 1: in-memory cache (same instance)
   const memCached = quotesCache.get(key);
@@ -38,12 +39,12 @@ export async function listMarketQuotes(
     return memCached.data;
   }
 
-  const redisKey = redisCacheKey(req.symbols);
+  const redisKey = redisCacheKey(parsedSymbols);
 
   try {
   const result = await cachedFetchJson<ListMarketQuotesResponse>(redisKey, REDIS_CACHE_TTL, async () => {
     const apiKey = process.env.FINNHUB_API_KEY;
-    const symbols = req.symbols;
+    const symbols = parsedSymbols;
     if (!symbols.length) return { quotes: [], finnhubSkipped: !apiKey, skipReason: !apiKey ? 'FINNHUB_API_KEY not configured' : '', rateLimited: false };
 
     const finnhubSymbols = symbols.filter((s) => !YAHOO_ONLY_SYMBOLS.has(s));
