@@ -3594,25 +3594,26 @@ export class DeckGLMap {
           { shape: shapes.square('rgb(255, 150, 80)'), label: t('components.deckgl.legend.commodityHub') },
           { shape: shapes.triangle('rgb(80, 170, 255)'), label: t('components.deckgl.legend.waterway') },
         ]
-      : SITE_VARIANT === 'happy'
-      ? [
-          { shape: shapes.circle('rgb(34, 197, 94)'), label: 'Positive Event' },
-          { shape: shapes.circle('rgb(234, 179, 8)'), label: 'Breakthrough' },
-          { shape: shapes.circle('rgb(74, 222, 128)'), label: 'Act of Kindness' },
-          { shape: shapes.circle('rgb(255, 100, 50)'), label: 'Natural Event' },
-          { shape: shapes.square('rgb(34, 180, 100)'), label: 'Happy Country' },
-          { shape: shapes.circle('rgb(74, 222, 128)'), label: 'Species Recovery Zone' },
-          { shape: shapes.circle('rgb(255, 200, 50)'), label: 'Renewable Installation' },
-        ]
-      : [
-          { shape: shapes.circle('rgb(255, 68, 68)'), label: t('components.deckgl.legend.highAlert') },
-          { shape: shapes.circle('rgb(255, 165, 0)'), label: t('components.deckgl.legend.elevated') },
-          { shape: shapes.circle(isLight ? 'rgb(180, 120, 0)' : 'rgb(255, 255, 0)'), label: t('components.deckgl.legend.monitoring') },
-          { shape: shapes.triangle('rgb(68, 136, 255)'), label: t('components.deckgl.legend.base') },
-          { shape: shapes.hexagon(isLight ? 'rgb(180, 120, 0)' : 'rgb(255, 220, 0)'), label: t('components.deckgl.legend.nuclear') },
-          { shape: shapes.square('rgb(136, 68, 255)'), label: t('components.deckgl.legend.datacenter') },
-          { shape: shapes.circle('rgb(160, 100, 255)'), label: t('components.deckgl.legend.aircraft') },
-        ];
+        : SITE_VARIANT === 'happy'
+          ? [
+            { shape: shapes.circle('rgb(34, 197, 94)'), label: 'Positive Event' },
+            { shape: shapes.circle('rgb(234, 179, 8)'), label: 'Breakthrough' },
+            { shape: shapes.circle('rgb(74, 222, 128)'), label: 'Act of Kindness' },
+            { shape: shapes.circle('rgb(255, 100, 50)'), label: 'Natural Event' },
+            { shape: shapes.square('rgb(34, 180, 100)'), label: 'Happy Country' },
+            { shape: shapes.circle('rgb(74, 222, 128)'), label: 'Species Recovery Zone' },
+            { shape: shapes.circle('rgb(255, 200, 50)'), label: 'Renewable Installation' },
+            { shape: shapes.circle('rgb(160, 100, 255)'), label: t('components.deckgl.legend.aircraft') },
+          ]
+          : [
+            { shape: shapes.circle('rgb(255, 68, 68)'), label: t('components.deckgl.legend.highAlert') },
+            { shape: shapes.circle('rgb(255, 165, 0)'), label: t('components.deckgl.legend.elevated') },
+            { shape: shapes.circle(isLight ? 'rgb(180, 120, 0)' : 'rgb(255, 255, 0)'), label: t('components.deckgl.legend.monitoring') },
+            { shape: shapes.triangle('rgb(68, 136, 255)'), label: t('components.deckgl.legend.base') },
+            { shape: shapes.hexagon(isLight ? 'rgb(180, 120, 0)' : 'rgb(255, 220, 0)'), label: t('components.deckgl.legend.nuclear') },
+            { shape: shapes.square('rgb(136, 68, 255)'), label: t('components.deckgl.legend.datacenter') },
+            { shape: shapes.circle('rgb(160, 100, 255)'), label: t('components.deckgl.legend.aircraft') },
+          ];
 
     legend.innerHTML = `
       <span class="legend-label-title">${t('components.deckgl.legend.title')}</span>
