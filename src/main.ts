@@ -138,7 +138,7 @@ Sentry.init({
     /The fetching process for the media resource was aborted/,
     /Invalid regular expression: missing/,
     /WeixinJSBridge/,
-    /evaluating 'e\.type'/,
+    /evaluating '\w+\.type'/,
     /Policy with name .* already exists/,
     /[sx]wbrowser is not defined/,
     /browser\.storage\.local/,
@@ -160,13 +160,14 @@ Sentry.init({
     /missing \) after argument list/,
     /Error invoking postMessage: Java exception/,
     /IndexSizeError/,
+    /Cannot add property \w+, object is not extensible/,
   ],
   beforeSend(event) {
     const msg = event.exception?.values?.[0]?.value ?? '';
     if (msg.length <= 3 && /^[a-zA-Z_$]+$/.test(msg)) return null;
     const frames = event.exception?.values?.[0]?.stacktrace?.frames ?? [];
     // Suppress maplibre internal null-access crashes (light, placement) only when stack is in map chunk
-    if (/this\.style\._layers|reading '_layers'|this\.(light|sky) is null|can't access property "(id|type|setFilter)", \w+ is (null|undefined)|Cannot read properties of null \(reading '(id|type|setFilter|_layers)'\)|null is not an object \(evaluating '\w{1,3}\.(id|style)|^\w{1,2} is null$/.test(msg)) {
+    if (/this\.style\._layers|reading '_layers'|this\.(light|sky) is null|can't access property "(id|type|setFilter)"[,] ?\w+ is (null|undefined)|can't access property "(id|type)" of null|Cannot read properties of null \(reading '(id|type|setFilter|_layers)'\)|null is not an object \(evaluating '\w{1,3}\.(id|style)|^\w{1,2} is null$/.test(msg)) {
       if (frames.some(f => /\/(map|maplibre|deck-stack)-[A-Za-z0-9_-]+\.js/.test(f.filename ?? ''))) return null;
     }
     // Suppress any TypeError that happens entirely within maplibre or deck.gl internals

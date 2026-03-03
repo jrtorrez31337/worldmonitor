@@ -4219,7 +4219,9 @@ export class DeckGLMap {
 
     if (assets) {
       assets.forEach(asset => {
-        this.highlightedAssets[asset.type].add(asset.id);
+        if (asset?.type && this.highlightedAssets[asset.type]) {
+          this.highlightedAssets[asset.type].add(asset.id);
+        }
       });
     }
 
@@ -4289,12 +4291,12 @@ export class DeckGLMap {
   }
 
   public flashAssets(assetType: AssetType, ids: string[]): void {
-    // Temporarily highlight assets
+    if (!this.highlightedAssets[assetType]) return;
     ids.forEach(id => this.highlightedAssets[assetType].add(id));
     this.render();
 
     setTimeout(() => {
-      ids.forEach(id => this.highlightedAssets[assetType].delete(id));
+      ids.forEach(id => this.highlightedAssets[assetType]?.delete(id));
       this.render();
     }, 3000);
   }

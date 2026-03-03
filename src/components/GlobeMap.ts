@@ -289,6 +289,7 @@ export class GlobeMap {
   private globe: GlobeInstance | null = null;
   private initialized = false;
   private destroyed = false;
+  private flushTimer: ReturnType<typeof requestAnimationFrame> | null = null;
 
   // Current data
   private hotspots: HotspotMarker[] = [];
@@ -1044,7 +1045,16 @@ export class GlobeMap {
   // ─── Flush all current data to globe ──────────────────────────────────────
 
   private flushMarkers(): void {
-    if (!this.globe || !this.initialized) return;
+    if (!this.globe || !this.initialized || this.destroyed) return;
+    if (this.flushTimer) return;
+    this.flushTimer = requestAnimationFrame(() => {
+      this.flushTimer = null;
+      this.flushMarkersImmediate();
+    });
+  }
+
+  private flushMarkersImmediate(): void {
+    if (!this.globe || !this.initialized || this.destroyed) return;
 
     const markers: GlobeMarker[] = [];
     if (this.layers.hotspots) markers.push(...this.hotspots);
@@ -1082,18 +1092,19 @@ export class GlobeMap {
       markers.push(...this.cableAdvisoryMarkers);
       markers.push(...this.repairShipMarkers);
     }
-    // News + flash markers are always rendered (no layer gate — same as DeckGLMap)
     markers.push(...this.newsLocationMarkers);
     markers.push(...this.flashMarkers);
 
-    this.globe.htmlElementsData(markers);
-    this.flushArcs();
-    this.flushPaths();
-    this.flushPolygons();
+    try {
+      this.globe.htmlElementsData(markers);
+      this.flushArcs();
+      this.flushPaths();
+      this.flushPolygons();
+    } catch (err) { if (import.meta.env.DEV) console.warn('[GlobeMap] flush error', err); }
   }
 
   private flushArcs(): void {
-    if (!this.globe || !this.initialized) return;
+    if (!this.globe || !this.initialized || this.destroyed) return;
     const segments = this.layers.tradeRoutes ? this.tradeRouteSegments : [];
     (this.globe as any)
       .arcsData(segments)
@@ -1117,7 +1128,7 @@ export class GlobeMap {
   }
 
   private flushPaths(): void {
-    if (!this.globe || !this.initialized) return;
+    if (!this.globe || !this.initialized || this.destroyed) return;
     const paths: GlobePath[] = [];
     if (this.layers.cables)    paths.push(...this.globePaths.filter(p => p.pathType === 'cable'));
     if (this.layers.pipelines) paths.push(...this.globePaths.filter(p => p.pathType !== 'cable'));
@@ -1144,7 +1155,7 @@ export class GlobeMap {
   }
 
   private flushPolygons(): void {
-    if (!this.globe || !this.initialized) return;
+    if (!this.globe || !this.initialized || this.destroyed) return;
     const polys = this.layers.conflicts
       ? GEOPOLITICAL_BOUNDARIES.map(b => ({
           coords: [b.coords],
@@ -1728,6 +1739,7 @@ export class GlobeMap {
 
   public destroy(): void {
     this.destroyed = true;
+    if (this.flushTimer) { cancelAnimationFrame(this.flushTimer); this.flushTimer = null; }
     if (this.autoRotateTimer) clearTimeout(this.autoRotateTimer);
     this.resizeObserver?.disconnect();
     this.resizeObserver = null;

@@ -3286,7 +3286,9 @@ export class MapComponent {
 
     if (assets) {
       assets.forEach((asset) => {
-        this.highlightedAssets[asset.type].add(asset.id);
+        if (asset?.type && this.highlightedAssets[asset.type]) {
+          this.highlightedAssets[asset.type].add(asset.id);
+        }
       });
     }
 
