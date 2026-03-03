@@ -63,4 +63,6 @@ message SearchFlightPricesResponse {
   bool is_demo_mode = 3;
   // Last update time as Unix epoch milliseconds.
   int64 updated_at = 4 [(sebuf.http.int64_encoding) = INT64_ENCODING_NUMBER];
+  // Whether returned prices are indicative (subject to change).
+  bool is_indicative = 5;
 }
