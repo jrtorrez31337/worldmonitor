@@ -965,7 +965,7 @@
         "monitoring": "Monitoring",
         "base": "Base",
         "nuclear": "Nuclear",
-        "aircraft": "Aircraft"
+        "aircraft": "Aircraft",
         "ciiLow": "Low (0–30)",
         "ciiNormal": "Normal (31–50)",
         "ciiElevated": "Elevated (51–65)",
