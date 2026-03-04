@@ -5,6 +5,7 @@ import { escapeHtml } from '@/utils/sanitize';
 import { t } from '../services/i18n';
 import { trackWebcamSelected, trackWebcamRegionFiltered } from '@/services/analytics';
 import { getStreamQuality, subscribeStreamQualityChange } from '@/services/ai-flow-settings';
+import { isMobileDevice } from '@/utils';
 
 type WebcamRegion = 'iran' | 'middle-east' | 'europe' | 'asia' | 'americas';
 
@@ -69,9 +70,15 @@ export class LiveWebcamsPanel extends Panel {
   private isIdle = false;
   private fullscreenBtn: HTMLButtonElement | null = null;
   private isFullscreen = false;
+  private readonly forceSingleView = !isDesktopRuntime() && isMobileDevice();
 
   constructor() {
     super({ id: 'live-webcams', title: t('panels.liveWebcams'), className: 'panel-wide' });
+
+    // Mobile: force single-cam view. 4 iframes at once is a battery + performance disaster.
+    if (this.forceSingleView) {
+      this.viewMode = 'single';
+    }
     this.createFullscreenButton();
     this.createToolbar();
     this.setupIntersectionObserver();
@@ -168,6 +175,12 @@ export class LiveWebcamsPanel extends Panel {
     singleBtn.title = 'Single view';
     singleBtn.addEventListener('click', () => this.setViewMode('single'));
 
+    // On mobile we force single view and hide/disable the grid toggle.
+    if (this.forceSingleView) {
+      gridBtn.disabled = true;
+      gridBtn.style.display = 'none';
+    }
+
     viewGroup.appendChild(gridBtn);
     viewGroup.appendChild(singleBtn);
 
@@ -191,6 +204,7 @@ export class LiveWebcamsPanel extends Panel {
   }
 
   private setViewMode(mode: ViewMode): void {
+    if (this.forceSingleView && mode === 'grid') return;
     if (mode === this.viewMode) return;
     this.viewMode = mode;
     this.toolbar?.querySelectorAll('.webcam-view-btn').forEach(btn => {
@@ -243,6 +257,12 @@ export class LiveWebcamsPanel extends Panel {
   }
 
   private renderGrid(): void {
+    if (this.forceSingleView) {
+      this.viewMode = 'single';
+      this.renderSingle();
+      return;
+    }
+
     this.content.innerHTML = '';
     this.content.className = 'panel-content webcam-content';
 
@@ -317,11 +337,13 @@ export class LiveWebcamsPanel extends Panel {
     const switcher = document.createElement('div');
     switcher.className = 'webcam-switcher';
 
-    const backBtn = document.createElement('button');
-    backBtn.className = 'webcam-feed-btn webcam-back-btn';
-    backBtn.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" stroke="none"><rect x="3" y="3" width="8" height="8" rx="1"/><rect x="13" y="3" width="8" height="8" rx="1"/><rect x="3" y="13" width="8" height="8" rx="1"/><rect x="13" y="13" width="8" height="8" rx="1"/></svg> Grid';
-    backBtn.addEventListener('click', () => this.setViewMode('grid'));
-    switcher.appendChild(backBtn);
+    if (!this.forceSingleView) {
+      const backBtn = document.createElement('button');
+      backBtn.className = 'webcam-feed-btn webcam-back-btn';
+      backBtn.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" stroke="none"><rect x="3" y="3" width="8" height="8" rx="1"/><rect x="13" y="3" width="8" height="8" rx="1"/><rect x="3" y="13" width="8" height="8" rx="1"/><rect x="13" y="13" width="8" height="8" rx="1"/></svg> Grid';
+      backBtn.addEventListener('click', () => this.setViewMode('grid'));
+      switcher.appendChild(backBtn);
+    }
 
     this.filteredFeeds.forEach(feed => {
       const btn = document.createElement('button');
