@@ -210,7 +210,7 @@ export function createDomainGateway(
       }
     }
 
-    if (response.status === 200 && request.method === 'GET' && !mergedHeaders.has('Cache-Control')) {
+    if (response.status === 200 && request.method === 'GET') {
       if (mergedHeaders.get('X-No-Cache')) {
         mergedHeaders.set('Cache-Control', 'no-store');
         mergedHeaders.set('X-Cache-Tier', 'no-store');
