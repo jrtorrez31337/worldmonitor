@@ -1217,24 +1217,51 @@ export class GlobeMap {
 
     if (this.layers.geopoliticalBoundaries) {
       for (const b of GEOPOLITICAL_BOUNDARIES) {
-        polys.push({ coords: [b.coords], name: b.name, _kind: 'boundary', boundaryType: b.boundaryType });
+        // Reverse winding for globe.gl: CCW → CW to render polygon interior, not complement
+        const reversed = b.coords.slice().reverse();
+        polys.push({ coords: [reversed], name: b.name, _kind: 'boundary', boundaryType: b.boundaryType });
       }
     }
 
     if (this.layers.conflicts) {
+      // Map conflict zone IDs to ISO-2 country codes for real GeoJSON geometry lookup.
+      // Using actual country geometries from countriesGeoData ensures correct rendering
+      // (same approach as CII choropleth which renders correctly).
+      const CONFLICT_ISO: Record<string, string[]> = {
+        iran: ['IR'],
+        ukraine: ['UA'],
+        gaza: ['PS', 'IL'],
+        sudan: ['SD'],
+        myanmar: ['MM'],
+      };
       for (const z of CONFLICT_ZONES) {
-        const ring: number[][] = z.coords.map(c => [c[0], c[1]]);
-        if (ring.length < 3) continue;
-        const first = ring[0]!, last = ring[ring.length - 1]!;
-        if (first[0] !== last[0] || first[1] !== last[1]) ring.push(first.slice());
-        polys.push({
-          coords: [ring],
-          name: z.name,
-          _kind: 'conflict',
-          intensity: z.intensity ?? 'low',
-          parties: z.parties,
-          casualties: z.casualties,
-        });
+        const isoCodes = CONFLICT_ISO[z.id];
+        if (isoCodes && this.countriesGeoData) {
+          for (const feat of this.countriesGeoData.features) {
+            const code = feat.properties?.['ISO3166-1-Alpha-2'] as string | undefined;
+            if (!code || !isoCodes.includes(code)) continue;
+            const geom = feat.geometry;
+            const rings = geom.type === 'Polygon' ? [geom.coordinates] : geom.type === 'MultiPolygon' ? geom.coordinates : [];
+            for (const ring of rings) {
+              // Reverse winding on all rings: globe.gl's ConicPolygonGeometry + earcut
+              // renders CCW exterior rings as complement on the sphere.
+              // Reversing to CW makes earcut fill the polygon interior correctly.
+              const reversed = ring.map((r: number[][]) => [...r].reverse());
+              polys.push({
+                coords: reversed,
+                name: z.name,
+                _kind: 'conflict',
+                intensity: z.intensity ?? 'low',
+                parties: z.parties,
+                casualties: z.casualties,
+              });
+            }
+          }
+        } else {
+          // Zones without country mapping (Strait of Hormuz, South Lebanon, etc.)
+          // are represented by center markers only — custom simplified polygons
+          // don't render correctly on globe.gl's spherical tessellation.
+        }
       }
     }
 
