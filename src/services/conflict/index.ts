@@ -384,8 +384,8 @@ export function groupByType(events: UcdpGeoEvent[]): Record<string, UcdpGeoEvent
 
 export async function fetchIranEvents(): Promise<IranEvent[]> {
   const resp = await iranBreaker.execute(async () => {
-    // Bypass stale CDN cache from pre-Redis deployment (remove once CDN is clean)
-    const r = await globalThis.fetch('/api/conflict/v1/list-iran-events?_v=9');
+    const cacheBust = Math.floor(Date.now() / 120_000);
+    const r = await globalThis.fetch(`/api/conflict/v1/list-iran-events?_v=${cacheBust}`);
     if (!r.ok) throw new Error(`HTTP ${r.status}`);
     return r.json() as Promise<ListIranEventsResponse>;
   }, emptyIranFallback);
