@@ -329,6 +329,14 @@ if ('__TAURI_INTERNALS__' in window || '__TAURI__' in window) {
 }
 
 if (!('__TAURI_INTERNALS__' in window) && !('__TAURI__' in window) && 'serviceWorker' in navigator) {
+  // Auto-reload when a new SW takes control (fixes stale HTML after deploys)
+  let refreshing = false;
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (refreshing) return;
+    refreshing = true;
+    window.location.reload();
+  });
+
   navigator.serviceWorker.register('/sw.js', { scope: '/' })
     .then((registration) => {
       console.log('[PWA] Service worker registered');
@@ -336,7 +344,6 @@ if (!('__TAURI_INTERNALS__' in window) && !('__TAURI__' in window) && 'serviceWo
         if (!navigator.onLine) return;
         try { await registration.update(); } catch {}
       }, 5 * 60 * 1000);
-      // Expose interval ID for cleanup/debugging
       (window as unknown as Record<string, unknown>).__swUpdateInterval = swUpdateInterval;
     })
     .catch((err) => {
