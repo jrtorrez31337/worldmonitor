@@ -157,8 +157,8 @@ const LIGHT_STYLE = SITE_VARIANT === 'happy'
   ? '/map-styles/happy-light.json'
   : 'https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json';
 
-const FALLBACK_DARK_STYLE = 'https://tiles.stadiamaps.com/styles/alidade_smooth_dark.json';
-const FALLBACK_LIGHT_STYLE = 'https://tiles.stadiamaps.com/styles/alidade_smooth.json';
+const FALLBACK_DARK_STYLE = 'https://tiles.openfreemap.org/styles/dark';
+const FALLBACK_LIGHT_STYLE = 'https://tiles.openfreemap.org/styles/positron';
 
 // Zoom thresholds for layer visibility and labels (matches old Map.ts)
 // Zoom-dependent layer visibility and labels
