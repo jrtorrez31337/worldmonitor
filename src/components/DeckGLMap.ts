@@ -48,7 +48,7 @@ import { HeatmapLayer } from '@deck.gl/aggregation-layers';
 import type { WeatherAlert } from '@/services/weather';
 import { escapeHtml } from '@/utils/sanitize';
 import { tokenizeForMatch, matchKeyword, matchesAnyKeyword, findMatchingKeywords } from '@/utils/keyword-match';
-import { t, getCurrentLanguage } from '@/services/i18n';
+import { t } from '@/services/i18n';
 import { debounce, rafSchedule, getCurrentTheme } from '@/utils/index';
 import {
   INTEL_HOTSPOTS,
@@ -424,7 +424,6 @@ export class DeckGLMap {
       this.rebuildTechHQSupercluster();
       this.rebuildDatacenterSupercluster();
       this.initDeck();
-      this.applyBasemapLocalization();
       this.loadCountryBoundaries();
       this.fetchServerBases();
       this.render();
@@ -4718,43 +4717,12 @@ export class DeckGLMap {
     // setStyle() replaces all sources/layers — reset guard so country layers are re-added
     this.countryGeoJsonLoaded = false;
     this.maplibreMap.once('style.load', () => {
-      this.applyBasemapLocalization();
       this.loadCountryBoundaries();
       this.updateCountryLayerPaint(theme);
       // Re-render deck.gl overlay after style swap — interleaved layers need
       // the new MapLibre style to be loaded before they can re-insert.
       this.render();
     });
-  }
-
-  private applyBasemapLocalization(): void {
-    if (!this.maplibreMap) return;
-    const style = this.maplibreMap.getStyle();
-    const layers = style?.layers ?? [];
-    const lang = getCurrentLanguage();
-    const localizedNameField = lang === 'en' ? 'name_en' : `name_${lang}`;
-
-    for (const layer of layers) {
-      const layerType = (layer as { type?: string }).type;
-      if (layerType !== 'symbol') continue;
-
-      const sourceLayer = (layer as { 'source-layer'?: string })['source-layer'];
-      if (sourceLayer !== 'place') continue;
-
-      const layout = (layer as { layout?: Record<string, unknown> }).layout;
-      if (!layout || layout['text-field'] == null) continue;
-
-      try {
-        this.maplibreMap.setLayoutProperty(layer.id, 'text-field', [
-          'coalesce',
-          ['get', localizedNameField],
-          ['get', 'name'],
-          ['get', 'name_en'],
-        ]);
-      } catch {
-        // Some style layers may reject runtime text-field updates; skip those safely.
-      }
-    }
   }
 
   private updateCountryLayerPaint(theme: 'dark' | 'light'): void {
