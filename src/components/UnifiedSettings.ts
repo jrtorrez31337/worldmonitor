@@ -7,6 +7,7 @@ import { getMapProvider, setMapProvider, MAP_PROVIDER_OPTIONS, type MapProvider 
 import { getLiveStreamsAlwaysOn, setLiveStreamsAlwaysOn } from '@/services/live-stream-settings';
 import { getGlobeVisualPreset, setGlobeVisualPreset, GLOBE_VISUAL_PRESET_OPTIONS, type GlobeVisualPreset } from '@/services/globe-render-settings';
 import type { StreamQuality } from '@/services/ai-flow-settings';
+import { getThemePreference, setThemePreference, type ThemePreference } from '@/utils/theme-manager';
 import { escapeHtml } from '@/utils/sanitize';
 import { trackLanguageChange } from '@/services/analytics';
 import type { PanelConfig } from '@/types';
@@ -208,6 +209,11 @@ export class UnifiedSettings {
         return;
       }
 
+      if (target.id === 'us-theme') {
+        setThemePreference(target.value as ThemePreference);
+        return;
+      }
+
       if (target.id === 'us-map-provider') {
         const provider = target.value as MapProvider;
         setMapProvider(provider);
@@ -361,6 +367,27 @@ export class UnifiedSettings {
     const settings = getAiFlowSettings();
     const currentLang = getCurrentLanguage();
     let html = '';
+
+    // Appearance section
+    html += `<div class="ai-flow-section-label">Appearance</div>`;
+
+    const currentThemePref = getThemePreference();
+    html += `<div class="ai-flow-toggle-row">
+      <div class="ai-flow-toggle-label-wrap">
+        <div class="ai-flow-toggle-label">Theme</div>
+        <div class="ai-flow-toggle-desc">Auto follows your system preference.</div>
+      </div>
+    </div>`;
+    html += `<select class="unified-settings-select" id="us-theme">`;
+    for (const opt of [
+      { value: 'auto', label: 'Auto (follow system)' },
+      { value: 'dark', label: 'Dark' },
+      { value: 'light', label: 'Light' },
+    ] as { value: ThemePreference; label: string }[]) {
+      const selected = opt.value === currentThemePref ? ' selected' : '';
+      html += `<option value="${opt.value}"${selected}>${opt.label}</option>`;
+    }
+    html += `</select>`;
 
     // Map section
     html += `<div class="ai-flow-section-label">${t('components.insights.sectionMap')}</div>`;
