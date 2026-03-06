@@ -140,6 +140,7 @@
     "toggleTheme": "สลับโหมดมืด/สว่าง",
     "panelDisplayCaption": "เลือกแผงที่จะแสดงบนแดชบอร์ด",
     "tabGeneral": "ทั่วไป",
+    "tabSettings": "การตั้งค่า",
     "tabPanels": "แผง",
     "tabSources": "แหล่งข้อมูล",
     "languageLabel": "ภาษา",
@@ -2335,5 +2336,23 @@
     "retry": "ลองใหม่",
     "refresh": "รีเฟรช",
     "all": "ทั้งหมด"
+  },
+  "preferences": {
+    "display": "การแสดงผล",
+    "intelligence": "ปัญญาประดิษฐ์",
+    "media": "สื่อ",
+    "panels": "แผง",
+    "dataAndCommunity": "ข้อมูลและชุมชน",
+    "theme": "ธีม",
+    "themeDesc": "อัตโนมัติตามการตั้งค่าระบบ",
+    "themeAuto": "อัตโนมัติ (ตามระบบ)",
+    "themeDark": "มืด",
+    "themeLight": "สว่าง",
+    "mapProvider": "ผู้ให้บริการไทล์แผนที่",
+    "mapProviderDesc": "เลือกแหล่งโหลดไทล์แผนที่",
+    "mapTheme": "ธีมแผนที่",
+    "mapThemeDesc": "สไตล์ภาพของไทล์แผนที่",
+    "globePreset": "พรีเซ็ตภาพ",
+    "globePresetDesc": "สลับระหว่างภาพลูกโลกแบบคลาสสิกและปรับปรุง"
   }
 }

@@ -140,6 +140,7 @@
     "toggleTheme": "Chuyển chế độ sáng/tối",
     "panelDisplayCaption": "Chọn bảng hiển thị trên bảng điều khiển",
     "tabGeneral": "Chung",
+    "tabSettings": "Cài đặt",
     "tabPanels": "Bảng",
     "tabSources": "Nguồn",
     "languageLabel": "Ngôn ngữ",
@@ -2335,5 +2336,23 @@
     "retry": "Thử lại",
     "refresh": "Làm mới",
     "all": "Tất cả"
+  },
+  "preferences": {
+    "display": "Hiển thị",
+    "intelligence": "Trí tuệ",
+    "media": "Phương tiện",
+    "panels": "Bảng",
+    "dataAndCommunity": "Dữ liệu & Cộng đồng",
+    "theme": "Giao diện",
+    "themeDesc": "Tự động theo cài đặt hệ thống.",
+    "themeAuto": "Tự động (theo hệ thống)",
+    "themeDark": "Tối",
+    "themeLight": "Sáng",
+    "mapProvider": "Nhà cung cấp bản đồ",
+    "mapProviderDesc": "Chọn nơi tải tile bản đồ.",
+    "mapTheme": "Giao diện bản đồ",
+    "mapThemeDesc": "Kiểu hiển thị của tile bản đồ.",
+    "globePreset": "Cài đặt trước hình ảnh",
+    "globePresetDesc": "Chuyển đổi giữa chế độ cổ điển và nâng cao của quả địa cầu."
   }
 }

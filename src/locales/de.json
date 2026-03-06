@@ -138,6 +138,7 @@
     "toggleTheme": "Schalten Sie den Dunkel-/Hellmodus um",
     "panelDisplayCaption": "Wählen Sie aus, welche Panels auf dem Dashboard angezeigt werden",
     "tabGeneral": "Allgemein",
+    "tabSettings": "Einstellungen",
     "tabPanels": "Panels",
     "tabSources": "Quellen",
     "languageLabel": "Sprache",
@@ -2335,5 +2336,23 @@
     "retry": "Retry",
     "refresh": "Refresh",
     "all": "Alle"
+  },
+  "preferences": {
+    "display": "Anzeige",
+    "intelligence": "Intelligenz",
+    "media": "Medien",
+    "panels": "Panels",
+    "dataAndCommunity": "Daten & Community",
+    "theme": "Design",
+    "themeDesc": "Automatisch folgt den Systemeinstellungen.",
+    "themeAuto": "Automatisch (System folgen)",
+    "themeDark": "Dunkel",
+    "themeLight": "Hell",
+    "mapProvider": "Karten-Tile-Anbieter",
+    "mapProviderDesc": "Wählen Sie aus, woher die Kartenkacheln geladen werden.",
+    "mapTheme": "Karten-Design",
+    "mapThemeDesc": "Visueller Stil der Kartenkacheln.",
+    "globePreset": "Visuelle Voreinstellung",
+    "globePresetDesc": "Zwischen klassischer und verbesserter Globus-Darstellung wechseln."
   }
 }

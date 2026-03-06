@@ -138,6 +138,7 @@
     "toggleTheme": "تبديل الوضع الداكن/الفاتح",
     "panelDisplayCaption": "اختر اللوحات التي تريد عرضها على لوحة المعلومات",
     "tabGeneral": "عام",
+    "tabSettings": "إعدادات",
     "tabPanels": "اللوحات",
     "tabSources": "المصادر",
     "languageLabel": "اللغة",
@@ -2335,5 +2336,23 @@
     "all": "الكل",
     "loadingGiving": "جارٍ تحميل بيانات العطاء العالمي",
     "rateLimitedMarket": "بيانات السوق غير متاحة مؤقتاً (تقييد معدل الطلبات) — ستتم إعادة المحاولة قريباً"
+  },
+  "preferences": {
+    "display": "العرض",
+    "intelligence": "الذكاء",
+    "media": "الوسائط",
+    "panels": "اللوحات",
+    "dataAndCommunity": "البيانات والمجتمع",
+    "theme": "السمة",
+    "themeDesc": "تلقائي يتبع تفضيلات النظام.",
+    "themeAuto": "تلقائي (تبع النظام)",
+    "themeDark": "داكن",
+    "themeLight": "فاتح",
+    "mapProvider": "مزود بلاطات الخريطة",
+    "mapProviderDesc": "اختر مصدر تحميل بلاطات الخريطة.",
+    "mapTheme": "سمة الخريطة",
+    "mapThemeDesc": "النمط البصري لبلاطات الخريطة.",
+    "globePreset": "الإعداد البصري",
+    "globePresetDesc": "التبديل بين المرئيات الكلاسيكية والمحسنة للكرة الأرضية."
   }
 }

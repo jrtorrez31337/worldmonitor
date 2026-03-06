@@ -140,6 +140,7 @@
     "toggleTheme": "Koyu/acik tema degistir",
     "panelDisplayCaption": "Gösterge panelinde hangi panellerin gösterileceğini seçin",
     "tabGeneral": "Genel",
+    "tabSettings": "Ayarlar",
     "tabPanels": "Paneller",
     "tabSources": "Kaynaklar",
     "languageLabel": "Dil",
@@ -2335,5 +2336,23 @@
     "retry": "Retry",
     "refresh": "Refresh",
     "all": "Tümü"
+  },
+  "preferences": {
+    "display": "Görünüm",
+    "intelligence": "Zeka",
+    "media": "Medya",
+    "panels": "Paneller",
+    "dataAndCommunity": "Veri ve Topluluk",
+    "theme": "Tema",
+    "themeDesc": "Otomatik olarak sistem tercihlerini takip eder.",
+    "themeAuto": "Otomatik (sistemi takip et)",
+    "themeDark": "Koyu",
+    "themeLight": "Açık",
+    "mapProvider": "Harita döşeme sağlayıcısı",
+    "mapProviderDesc": "Harita döşemelerinin yükleneceği kaynağı seçin.",
+    "mapTheme": "Harita teması",
+    "mapThemeDesc": "Harita döşemelerinin görsel stili.",
+    "globePreset": "Görsel ön ayar",
+    "globePresetDesc": "Klasik ve geliştirilmiş küre görselleri arasında geçiş yapın."
   }
 }

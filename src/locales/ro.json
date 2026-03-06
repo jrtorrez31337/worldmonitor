@@ -140,6 +140,7 @@
     "toggleTheme": "Comutați modul întuneric/luminos",
     "panelDisplayCaption": "Alegeți ce panouri să afișați pe tabloul de bord",
     "tabGeneral": "General",
+    "tabSettings": "Setări",
     "tabPanels": "Panouri",
     "tabSources": "Surse",
     "languageLabel": "Limba",
@@ -2335,5 +2336,23 @@
     "retry": "Reîncercați",
     "refresh": "Actualizează",
     "all": "Toate"
+  },
+  "preferences": {
+    "display": "Afișare",
+    "intelligence": "Inteligență",
+    "media": "Media",
+    "panels": "Panouri",
+    "dataAndCommunity": "Date și comunitate",
+    "theme": "Temă",
+    "themeDesc": "Automat urmează preferințele sistemului.",
+    "themeAuto": "Automat (urmează sistemul)",
+    "themeDark": "Întuneric",
+    "themeLight": "Luminos",
+    "mapProvider": "Furnizor de dale hartă",
+    "mapProviderDesc": "Alegeți sursa dalelor hărții.",
+    "mapTheme": "Tema hărții",
+    "mapThemeDesc": "Stilul vizual al dalelor hărții.",
+    "globePreset": "Presetare vizuală",
+    "globePresetDesc": "Comută între vizualizări clasice și îmbunătățite ale globului."
   }
 }

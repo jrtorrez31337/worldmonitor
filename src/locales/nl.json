@@ -2163,6 +2163,7 @@
     "toggleTheme": "Schakel tussen de donkere/lichte modus",
     "panelDisplayCaption": "Kies welke panelen op het dashboard worden weergegeven",
     "tabGeneral": "Algemeen",
+    "tabSettings": "Instellingen",
     "tabPanels": "Panelen",
     "tabSources": "Bronnen",
     "languageLabel": "Taal",
@@ -2335,5 +2336,23 @@
       "aviationDisruptions": "Luchtvaartverstoringen",
       "gpsJammingZones": "GPS-storingszones"
     }
+  },
+  "preferences": {
+    "display": "Weergave",
+    "intelligence": "Intelligentie",
+    "media": "Media",
+    "panels": "Panelen",
+    "dataAndCommunity": "Data & Community",
+    "theme": "Thema",
+    "themeDesc": "Automatisch volgt systeemvoorkeur.",
+    "themeAuto": "Automatisch (systeem volgen)",
+    "themeDark": "Donker",
+    "themeLight": "Licht",
+    "mapProvider": "Kaarttegel-provider",
+    "mapProviderDesc": "Kies waar kaarttegels vandaan worden geladen.",
+    "mapTheme": "Kaartthema",
+    "mapThemeDesc": "Visuele stijl van de kaarttegels.",
+    "globePreset": "Visuele voorinstelling",
+    "globePresetDesc": "Schakel tussen klassieke en verbeterde globevisuals."
   }
 }

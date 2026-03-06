@@ -138,6 +138,7 @@
     "toggleTheme": "Basculer en mode sombre/clair",
     "panelDisplayCaption": "Choisissez les panneaux à afficher sur le tableau de bord",
     "tabGeneral": "Général",
+    "tabSettings": "Paramètres",
     "tabPanels": "Panneaux",
     "tabSources": "Sources",
     "languageLabel": "Langue",
@@ -2335,5 +2336,23 @@
     "all": "Tous",
     "loadingGiving": "Chargement des données de dons...",
     "rateLimitedMarket": "Données de marché temporairement limitées — nouvelle tentative automatique"
+  },
+  "preferences": {
+    "display": "Affichage",
+    "intelligence": "Intelligence",
+    "media": "Médias",
+    "panels": "Panneaux",
+    "dataAndCommunity": "Données & Communauté",
+    "theme": "Thème",
+    "themeDesc": "Auto suit les préférences système.",
+    "themeAuto": "Auto (suivre le système)",
+    "themeDark": "Sombre",
+    "themeLight": "Clair",
+    "mapProvider": "Fournisseur de tuiles",
+    "mapProviderDesc": "Choisissez la source des tuiles de carte.",
+    "mapTheme": "Thème de carte",
+    "mapThemeDesc": "Style visuel des tuiles de carte.",
+    "globePreset": "Préréglage visuel",
+    "globePresetDesc": "Basculer entre les visuels classiques et améliorés du globe."
   }
 }

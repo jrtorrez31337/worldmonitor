@@ -138,6 +138,7 @@
     "toggleTheme": "Alternar modo oscuro/claro",
     "panelDisplayCaption": "Elija qué paneles mostrar en el tablero",
     "tabGeneral": "General",
+    "tabSettings": "Ajustes",
     "tabPanels": "Paneles",
     "tabSources": "Fuentes",
     "languageLabel": "Idioma",
@@ -2335,5 +2336,23 @@
     "retry": "Retry",
     "refresh": "Refresh",
     "all": "Todos"
+  },
+  "preferences": {
+    "display": "Pantalla",
+    "intelligence": "Inteligencia",
+    "media": "Medios",
+    "panels": "Paneles",
+    "dataAndCommunity": "Datos y comunidad",
+    "theme": "Tema",
+    "themeDesc": "Automático sigue las preferencias del sistema.",
+    "themeAuto": "Automático (seguir sistema)",
+    "themeDark": "Oscuro",
+    "themeLight": "Claro",
+    "mapProvider": "Proveedor de mosaicos",
+    "mapProviderDesc": "Elige de dónde se cargan los mosaicos del mapa.",
+    "mapTheme": "Tema del mapa",
+    "mapThemeDesc": "Estilo visual de los mosaicos del mapa.",
+    "globePreset": "Preajuste visual",
+    "globePresetDesc": "Alternar entre visuales clásicos y mejorados del globo."
   }
 }

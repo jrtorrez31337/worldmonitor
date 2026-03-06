@@ -138,6 +138,7 @@
     "toggleTheme": "Przełącz tryb ciemny/jasny",
     "panelDisplayCaption": "Wybierz, które panele wyświetlać na pulpicie",
     "tabGeneral": "Ogólne",
+    "tabSettings": "Ustawienia",
     "tabPanels": "Panele",
     "tabSources": "Źródła",
     "languageLabel": "Język",
@@ -2335,5 +2336,23 @@
     "all": "Wszystkie",
     "loadingGiving": "Ładowanie danych o globalnej dobroczynności",
     "rateLimitedMarket": "Dane rynkowe tymczasowo niedostępne (limit zapytań) — ponowna próba wkrótce"
+  },
+  "preferences": {
+    "display": "Wyświetlanie",
+    "intelligence": "Inteligencja",
+    "media": "Media",
+    "panels": "Panele",
+    "dataAndCommunity": "Dane i społeczność",
+    "theme": "Motyw",
+    "themeDesc": "Automatycznie podąża za ustawieniami systemu.",
+    "themeAuto": "Automatyczny (podążaj za systemem)",
+    "themeDark": "Ciemny",
+    "themeLight": "Jasny",
+    "mapProvider": "Dostawca kafelków mapy",
+    "mapProviderDesc": "Wybierz źródło kafelków mapy.",
+    "mapTheme": "Motyw mapy",
+    "mapThemeDesc": "Styl wizualny kafelków mapy.",
+    "globePreset": "Ustawienie wizualne",
+    "globePresetDesc": "Przełączaj między klasycznymi a ulepszonymi wizualizacjami globu."
   }
 }

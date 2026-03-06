@@ -2163,6 +2163,7 @@
     "toggleTheme": "Växla mellan mörkt/ljusläge",
     "panelDisplayCaption": "Välj vilka paneler som ska visas på instrumentpanelen",
     "tabGeneral": "Allmänt",
+    "tabSettings": "Inställningar",
     "tabPanels": "Paneler",
     "tabSources": "Källor",
     "languageLabel": "Språk",
@@ -2335,5 +2336,23 @@
       "aviationDisruptions": "Flygstörningar",
       "gpsJammingZones": "GPS-störningszoner"
     }
+  },
+  "preferences": {
+    "display": "Visning",
+    "intelligence": "Intelligens",
+    "media": "Media",
+    "panels": "Paneler",
+    "dataAndCommunity": "Data & Gemenskap",
+    "theme": "Tema",
+    "themeDesc": "Automatiskt följer systeminställningar.",
+    "themeAuto": "Automatisk (följ systemet)",
+    "themeDark": "Mörk",
+    "themeLight": "Ljus",
+    "mapProvider": "Kartpanel-leverantör",
+    "mapProviderDesc": "Välj varifrån kartpaneler laddas.",
+    "mapTheme": "Karttema",
+    "mapThemeDesc": "Visuell stil för kartpaneler.",
+    "globePreset": "Visuell förinställning",
+    "globePresetDesc": "Växla mellan klassiska och förbättrade globvisualer."
   }
 }

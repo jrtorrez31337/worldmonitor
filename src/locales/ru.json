@@ -140,6 +140,7 @@
     "toggleTheme": "Переключить тёмную/светлую тему",
     "panelDisplayCaption": "Выберите панели для отображения на панели управления",
     "tabGeneral": "Общее",
+    "tabSettings": "Настройки",
     "tabPanels": "Панели",
     "tabSources": "Источники",
     "languageLabel": "Язык",
@@ -2335,5 +2336,23 @@
     "retry": "Retry",
     "refresh": "Refresh",
     "all": "Все"
+  },
+  "preferences": {
+    "display": "Отображение",
+    "intelligence": "Аналитика",
+    "media": "Медиа",
+    "panels": "Панели",
+    "dataAndCommunity": "Данные и сообщество",
+    "theme": "Тема",
+    "themeDesc": "Автоматически следует настройкам системы.",
+    "themeAuto": "Авто (следовать системе)",
+    "themeDark": "Тёмная",
+    "themeLight": "Светлая",
+    "mapProvider": "Поставщик тайлов карты",
+    "mapProviderDesc": "Выберите источник загрузки тайлов карты.",
+    "mapTheme": "Тема карты",
+    "mapThemeDesc": "Визуальный стиль тайлов карты.",
+    "globePreset": "Визуальный пресет",
+    "globePresetDesc": "Переключение между классической и улучшенной визуализацией глобуса."
   }
 }

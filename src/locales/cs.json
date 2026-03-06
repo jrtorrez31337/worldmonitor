@@ -138,6 +138,7 @@
     "toggleTheme": "Přepnout tmavý/světlý režim",
     "panelDisplayCaption": "Vyberte, které panely se mají zobrazit na řídicím panelu",
     "tabGeneral": "Obecné",
+    "tabSettings": "Nastavení",
     "tabPanels": "Panely",
     "tabSources": "Zdroje",
     "languageLabel": "Jazyk",
@@ -2335,5 +2336,23 @@
     "retry": "Zkusit znovu",
     "refresh": "Obnovit",
     "all": "Vše"
+  },
+  "preferences": {
+    "display": "Zobrazení",
+    "intelligence": "Inteligence",
+    "media": "Média",
+    "panels": "Panely",
+    "dataAndCommunity": "Data a komunita",
+    "theme": "Motiv",
+    "themeDesc": "Automaticky sleduje nastavení systému.",
+    "themeAuto": "Automaticky (podle systému)",
+    "themeDark": "Tmavý",
+    "themeLight": "Světlý",
+    "mapProvider": "Poskytovatel dlaždic mapy",
+    "mapProviderDesc": "Zvolte zdroj dlaždic mapy.",
+    "mapTheme": "Motiv mapy",
+    "mapThemeDesc": "Vizuální styl dlaždic mapy.",
+    "globePreset": "Vizuální předvolba",
+    "globePresetDesc": "Přepínejte mezi klasickým a vylepšeným zobrazením globálu."
   }
 }

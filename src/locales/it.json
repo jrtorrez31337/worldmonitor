@@ -138,6 +138,7 @@
     "toggleTheme": "Attiva/disattiva tema chiaro/scuro",
     "panelDisplayCaption": "Scegli quali pannelli mostrare nella dashboard",
     "tabGeneral": "Generale",
+    "tabSettings": "Impostazioni",
     "tabPanels": "Pannelli",
     "tabSources": "Fonti",
     "languageLabel": "Lingua",
@@ -2335,5 +2336,23 @@
     "retry": "Retry",
     "refresh": "Refresh",
     "all": "Tutti"
+  },
+  "preferences": {
+    "display": "Display",
+    "intelligence": "Intelligenza",
+    "media": "Media",
+    "panels": "Pannelli",
+    "dataAndCommunity": "Dati e comunità",
+    "theme": "Tema",
+    "themeDesc": "Automatico segue le preferenze di sistema.",
+    "themeAuto": "Automatico (segui sistema)",
+    "themeDark": "Scuro",
+    "themeLight": "Chiaro",
+    "mapProvider": "Provider tile mappa",
+    "mapProviderDesc": "Scegli da dove caricare le tile della mappa.",
+    "mapTheme": "Tema mappa",
+    "mapThemeDesc": "Stile visivo delle tile della mappa.",
+    "globePreset": "Preset visivo",
+    "globePresetDesc": "Passa tra visuali classici e migliorati del globo."
   }
 }

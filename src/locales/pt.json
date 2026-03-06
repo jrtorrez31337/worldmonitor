@@ -2163,6 +2163,7 @@
     "toggleTheme": "Alternar modo claro/escuro",
     "panelDisplayCaption": "Escolha quais painéis exibir no painel",
     "tabGeneral": "Geral",
+    "tabSettings": "Configurações",
     "tabPanels": "Painéis",
     "tabSources": "Fontes",
     "languageLabel": "Idioma",
@@ -2335,5 +2336,23 @@
       "aviationDisruptions": "Perturbações aéreas",
       "gpsJammingZones": "Zonas de interferência GPS"
     }
+  },
+  "preferences": {
+    "display": "Tela",
+    "intelligence": "Inteligência",
+    "media": "Mídia",
+    "panels": "Painéis",
+    "dataAndCommunity": "Dados e Comunidade",
+    "theme": "Tema",
+    "themeDesc": "Automático segue a preferência do sistema.",
+    "themeAuto": "Automático (seguir sistema)",
+    "themeDark": "Escuro",
+    "themeLight": "Claro",
+    "mapProvider": "Provedor de tiles do mapa",
+    "mapProviderDesc": "Escolha de onde os tiles do mapa são carregados.",
+    "mapTheme": "Tema do mapa",
+    "mapThemeDesc": "Estilo visual dos tiles do mapa.",
+    "globePreset": "Predefinição visual",
+    "globePresetDesc": "Alternar entre visuais clássicos e aprimorados do globo."
   }
 }

@@ -14503,6 +14503,53 @@ a.prediction-link:hover {
   }
 }
 
+/* ============ Preferences Collapsible Groups ============ */
+
+.wm-pref-group {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  margin-bottom: 8px;
+  overflow: hidden;
+}
+
+.wm-pref-group > summary {
+  cursor: pointer;
+  padding: 10px 14px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  color: var(--text-primary, #e8eaed);
+  background: rgba(255, 255, 255, 0.03);
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  user-select: none;
+}
+
+.wm-pref-group > summary::-webkit-details-marker {
+  display: none;
+}
+
+.wm-pref-group > summary::before {
+  content: '\25B8';
+  font-size: 10px;
+  transition: transform 0.15s ease;
+  color: var(--text-faint);
+}
+
+.wm-pref-group[open] > summary::before {
+  transform: rotate(90deg);
+}
+
+.wm-pref-group > summary:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.wm-pref-group-content {
+  padding: 4px 14px 10px;
+}
+
 /* ============ AI Flow Toggle Styles (shared) ============ */
 
 .ai-flow-section-label {

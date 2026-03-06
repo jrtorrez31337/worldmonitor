@@ -140,6 +140,7 @@
     "toggleTheme": "ダーク/ライトモード切替",
     "panelDisplayCaption": "ダッシュボードに表示するパネルを選択",
     "tabGeneral": "一般",
+    "tabSettings": "設定",
     "tabPanels": "パネル",
     "tabSources": "ソース",
     "languageLabel": "言語",
@@ -2335,5 +2336,23 @@
     "retry": "Retry",
     "refresh": "Refresh",
     "all": "すべて"
+  },
+  "preferences": {
+    "display": "ディスプレイ",
+    "intelligence": "インテリジェンス",
+    "media": "メディア",
+    "panels": "パネル",
+    "dataAndCommunity": "データとコミュニティ",
+    "theme": "テーマ",
+    "themeDesc": "自動でシステム設定に従います。",
+    "themeAuto": "自動（システムに従う）",
+    "themeDark": "ダーク",
+    "themeLight": "ライト",
+    "mapProvider": "マップタイルプロバイダー",
+    "mapProviderDesc": "マップタイルの読み込み先を選択します。",
+    "mapTheme": "マップテーマ",
+    "mapThemeDesc": "マップタイルのビジュアルスタイル。",
+    "globePreset": "ビジュアルプリセット",
+    "globePresetDesc": "クラシックと拡張地球表示を切り替えます。"
   }
 }
