@@ -7,12 +7,21 @@ loadEnvFile(import.meta.url);
 const CANONICAL_KEY = 'market:crypto:v1';
 const CACHE_TTL = 3600; // 1 hour
 
-const CRYPTO_IDS = ['bitcoin', 'ethereum', 'solana', 'ripple'];
+const CRYPTO_IDS = [
+  'bitcoin', 'ethereum', 'tether', 'binancecoin', 'solana',
+  'ripple', 'usd-coin', 'cardano', 'dogecoin', 'tron',
+];
 const CRYPTO_META = {
   bitcoin: { name: 'Bitcoin', symbol: 'BTC' },
   ethereum: { name: 'Ethereum', symbol: 'ETH' },
+  tether: { name: 'Tether', symbol: 'USDT' },
+  binancecoin: { name: 'BNB', symbol: 'BNB' },
   solana: { name: 'Solana', symbol: 'SOL' },
   ripple: { name: 'XRP', symbol: 'XRP' },
+  'usd-coin': { name: 'USD Coin', symbol: 'USDC' },
+  cardano: { name: 'Cardano', symbol: 'ADA' },
+  dogecoin: { name: 'Dogecoin', symbol: 'DOGE' },
+  tron: { name: 'TRON', symbol: 'TRX' },
 };
 
 async function fetchWithRateLimitRetry(url, maxAttempts = 5, headers = { Accept: 'application/json', 'User-Agent': CHROME_UA }) {

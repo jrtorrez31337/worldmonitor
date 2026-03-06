@@ -381,7 +381,14 @@ export class DataLoaderManager implements AppModule {
       tasks.push({ name: 'intelligence', task: runGuarded('intelligence', () => this.loadIntelligenceSignals()) });
     }
 
-    if (SITE_VARIANT === 'full') tasks.push({ name: 'firms', task: runGuarded('firms', () => this.loadFirmsData()) });
+    if (SITE_VARIANT === 'full') {
+      if (isFeatureAvailable('nasaFirms')) {
+        tasks.push({ name: 'firms', task: runGuarded('firms', () => this.loadFirmsData()) });
+      } else {
+        this.ctx.panels['satellite-fires']?.showConfigError('NASA_FIRMS_API_KEY not configured \u2014 add in Settings');
+        this.ctx.statusPanel?.updateApi('FIRMS', { status: 'error' });
+      }
+    }
     if (this.ctx.mapLayers.natural) tasks.push({ name: 'natural', task: runGuarded('natural', () => this.loadNatural()) });
     if (SITE_VARIANT !== 'happy' && this.ctx.mapLayers.weather) tasks.push({ name: 'weather', task: runGuarded('weather', () => this.loadWeatherAlerts()) });
     if (SITE_VARIANT !== 'happy' && !isDesktopRuntime() && this.ctx.mapLayers.ais) tasks.push({ name: 'ais', task: runGuarded('ais', () => this.loadAisSignals()) });

@@ -55,11 +55,20 @@ export const MARKET_SYMBOLS: MarketSymbol[] = [
   { symbol: 'BAC', name: 'BofA', display: 'BAC' },
 ];
 
-export const CRYPTO_IDS = ['bitcoin', 'ethereum', 'solana', 'ripple'] as const;
+export const CRYPTO_IDS = [
+  'bitcoin', 'ethereum', 'tether', 'binancecoin', 'solana',
+  'ripple', 'usd-coin', 'cardano', 'dogecoin', 'tron',
+] as const;
 
 export const CRYPTO_MAP: Record<string, { name: string; symbol: string }> = {
   bitcoin: { name: 'Bitcoin', symbol: 'BTC' },
   ethereum: { name: 'Ethereum', symbol: 'ETH' },
+  tether: { name: 'Tether', symbol: 'USDT' },
+  binancecoin: { name: 'BNB', symbol: 'BNB' },
   solana: { name: 'Solana', symbol: 'SOL' },
   ripple: { name: 'XRP', symbol: 'XRP' },
+  'usd-coin': { name: 'USD Coin', symbol: 'USDC' },
+  cardano: { name: 'Cardano', symbol: 'ADA' },
+  dogecoin: { name: 'Dogecoin', symbol: 'DOGE' },
+  tron: { name: 'TRON', symbol: 'TRX' },
 };

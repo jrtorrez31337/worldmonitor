@@ -73,8 +73,14 @@ export const YAHOO_ONLY_SYMBOLS = new Set([
 export const CRYPTO_META: Record<string, { name: string; symbol: string }> = {
   bitcoin: { name: 'Bitcoin', symbol: 'BTC' },
   ethereum: { name: 'Ethereum', symbol: 'ETH' },
+  tether: { name: 'Tether', symbol: 'USDT' },
+  binancecoin: { name: 'BNB', symbol: 'BNB' },
   solana: { name: 'Solana', symbol: 'SOL' },
   ripple: { name: 'XRP', symbol: 'XRP' },
+  'usd-coin': { name: 'USD Coin', symbol: 'USDC' },
+  cardano: { name: 'Cardano', symbol: 'ADA' },
+  dogecoin: { name: 'Dogecoin', symbol: 'DOGE' },
+  tron: { name: 'TRON', symbol: 'TRX' },
 };
 
 // ========================================================================
@@ -277,9 +283,14 @@ export async function fetchCoinGeckoMarkets(
 const COINPAPRIKA_ID_MAP: Record<string, string> = {
   bitcoin: 'btc-bitcoin',
   ethereum: 'eth-ethereum',
+  tether: 'usdt-tether',
+  binancecoin: 'bnb-binance-coin',
   solana: 'sol-solana',
   ripple: 'xrp-ripple',
-  tether: 'usdt-tether',
+  'usd-coin': 'usdc-usd-coin',
+  cardano: 'ada-cardano',
+  dogecoin: 'doge-dogecoin',
+  tron: 'trx-tron',
   'usd-coin': 'usdc-usd-coin',
   dai: 'dai-dai',
   'first-digital-usd': 'fdusd-first-digital-usd',
