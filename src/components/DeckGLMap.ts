@@ -361,6 +361,7 @@ export class DeckGLMap {
   private webglLost = false;
   private usedFallbackStyle = false;
   private styleLoadTimeoutId: ReturnType<typeof setTimeout> | null = null;
+  private tileMonitorGeneration = 0;
 
 
   private layerCache: Map<string, Layer> = new Map();
@@ -4955,6 +4956,67 @@ export class DeckGLMap {
         ? (isLightMapTheme(mapTheme) ? FALLBACK_LIGHT_STYLE : FALLBACK_DARK_STYLE)
         : getStyleForProvider(provider, mapTheme);
     this.maplibreMap.setStyle(style);
+    this.countryGeoJsonLoaded = false;
+    this.maplibreMap.once('style.load', () => {
+      localizeMapLabels(this.maplibreMap);
+      this.loadCountryBoundaries();
+      const paintTheme = isLightMapTheme(mapTheme) ? 'light' as const : 'dark' as const;
+      this.updateCountryLayerPaint(paintTheme);
+      this.render();
+    });
+    if (!isHappyVariant && provider !== 'openfreemap' && !this.usedFallbackStyle) {
+      this.monitorTileLoading(mapTheme);
+    }
+  }
+
+  private monitorTileLoading(mapTheme: string): void {
+    if (!this.maplibreMap) return;
+    const gen = ++this.tileMonitorGeneration;
+    let ok = false;
+    let errCount = 0;
+    let timeoutId: ReturnType<typeof setTimeout> | null = null;
+    const map = this.maplibreMap;
+
+    const cleanup = () => {
+      map.off('error', onError);
+      map.off('data', onData);
+      if (timeoutId) { clearTimeout(timeoutId); timeoutId = null; }
+    };
+
+    const onError = (e: { error?: Error; message?: string }) => {
+      if (gen !== this.tileMonitorGeneration) { cleanup(); return; }
+      const msg = e.error?.message ?? e.message ?? '';
+      if (msg.includes('Failed to fetch') || msg.includes('AJAXError') || msg.includes('CORS') || msg.includes('NetworkError') || msg.includes('403') || msg.includes('Forbidden')) {
+        errCount++;
+        if (!ok && errCount >= 2) {
+          cleanup();
+          this.switchToFallbackStyle(mapTheme);
+        }
+      }
+    };
+
+    const onData = (e: { dataType?: string }) => {
+      if (gen !== this.tileMonitorGeneration) { cleanup(); return; }
+      if (e.dataType === 'source') { ok = true; cleanup(); }
+    };
+
+    map.on('error', onError);
+    map.on('data', onData);
+
+    timeoutId = setTimeout(() => {
+      timeoutId = null;
+      if (gen !== this.tileMonitorGeneration) return;
+      cleanup();
+      if (!ok) this.switchToFallbackStyle(mapTheme);
+    }, 10000);
+  }
+
+  private switchToFallbackStyle(mapTheme: string): void {
+    if (this.usedFallbackStyle || !this.maplibreMap) return;
+    this.usedFallbackStyle = true;
+    const fallback = isLightMapTheme(mapTheme) ? FALLBACK_LIGHT_STYLE : FALLBACK_DARK_STYLE;
+    console.warn(`[DeckGLMap] Basemap tiles failed, falling back to OpenFreeMap: ${fallback}`);
+    this.maplibreMap.setStyle(fallback);
     this.countryGeoJsonLoaded = false;
     this.maplibreMap.once('style.load', () => {
       localizeMapLabels(this.maplibreMap);
