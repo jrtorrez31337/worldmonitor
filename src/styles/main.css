@@ -7688,37 +7688,64 @@ a.prediction-link:hover {
 .economic-tabs {
   display: flex;
   gap: 2px;
-  padding: 6px 8px;
+  padding: 8px 10px 0;
   border-bottom: 1px solid var(--border);
-  background: var(--darken-heavy);
 }
 
 .economic-tab {
-  flex: 1;
-  padding: 4px 8px;
-  font-size: 10px;
-  border: none;
   background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
   color: var(--text-dim);
+  padding: 6px 10px;
+  font-size: 11px;
   cursor: pointer;
-  border-radius: 4px;
-  transition: all 0.15s;
+  transition: all 0.15s ease;
+  white-space: nowrap;
 }
 
 .economic-tab:hover {
-  background: rgba(68, 255, 136, 0.1);
   color: var(--text);
 }
 
 .economic-tab.active {
-  background: rgba(68, 255, 136, 0.2);
-  color: var(--green);
+  color: var(--accent);
+  border-bottom-color: var(--accent);
 }
 
 .economic-content {
   padding: 8px;
   max-height: 300px;
   overflow-y: auto;
+}
+
+/* Regulation Panel Tabs */
+.regulation-tabs {
+  display: flex;
+  gap: 2px;
+  padding: 8px 10px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.regulation-tabs .tab {
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--text-dim);
+  padding: 6px 10px;
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.regulation-tabs .tab:hover {
+  color: var(--text);
+}
+
+.regulation-tabs .tab.active {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
 }
 
 .economic-empty {
@@ -12610,31 +12637,30 @@ a.prediction-link:hover {
 
 .tech-events-tabs {
   display: flex;
-  gap: 4px;
-  padding: 0 2px;
+  gap: 2px;
+  padding: 8px 10px 0;
+  border-bottom: 1px solid var(--border);
 }
 
 .tech-events-tabs .tab {
-  flex: 1;
-  padding: 5px 8px;
   background: transparent;
-  border: 1px solid var(--border);
-  border-radius: 4px;
+  border: none;
+  border-bottom: 2px solid transparent;
   color: var(--text-dim);
-  font-size: 9px;
+  padding: 6px 10px;
+  font-size: 11px;
   cursor: pointer;
   transition: all 0.15s ease;
+  white-space: nowrap;
 }
 
 .tech-events-tabs .tab:hover {
-  background: var(--overlay-light);
   color: var(--text);
 }
 
 .tech-events-tabs .tab.active {
-  background: var(--accent);
-  color: var(--bg);
-  border-color: var(--accent);
+  color: var(--accent);
+  border-bottom-color: var(--accent);
 }
 
 .tech-events-stats {
