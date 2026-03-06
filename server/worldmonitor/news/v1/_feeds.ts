@@ -33,12 +33,18 @@ export const VARIANT_FEEDS: Record<string, Record<string, ServerFeed[]>> = {
       { name: 'EuroNews', url: 'https://www.euronews.com/rss?format=xml' },
       { name: 'Le Monde', url: 'https://www.lemonde.fr/en/rss/une.xml' },
       { name: 'DW News', url: 'https://rss.dw.com/xml/rss-en-all' },
+      { name: 'Tagesschau', url: 'https://www.tagesschau.de/xml/rss2/', lang: 'de' },
+      { name: 'ANSA', url: 'https://www.ansa.it/sito/ansait_rss.xml', lang: 'it' },
+      { name: 'NOS Nieuws', url: 'https://feeds.nos.nl/nosnieuwsalgemeen', lang: 'nl' },
+      { name: 'SVT Nyheter', url: 'https://www.svt.se/nyheter/rss.xml', lang: 'sv' },
     ],
     middleeast: [
       { name: 'BBC Middle East', url: 'https://feeds.bbci.co.uk/news/world/middle_east/rss.xml' },
       { name: 'Al Jazeera', url: 'https://www.aljazeera.com/xml/rss/all.xml' },
       { name: 'Guardian ME', url: 'https://www.theguardian.com/world/middleeast/rss' },
       { name: 'Oman Observer', url: 'https://www.omanobserver.om/rssFeed/1' },
+      { name: 'BBC Persian', url: 'https://feeds.bbci.co.uk/persian/rss.xml', lang: 'fa' },
+      { name: 'The National', url: 'https://www.thenationalnews.com/arc/outboundfeeds/rss/?outputType=xml' },
     ],
     tech: [
       { name: 'Hacker News', url: 'https://hnrss.org/frontpage' },
@@ -68,10 +74,15 @@ export const VARIANT_FEEDS: Record<string, Record<string, ServerFeed[]>> = {
       { name: 'SEC', url: 'https://www.sec.gov/news/pressreleases.rss' },
       { name: 'UN News', url: 'https://news.un.org/feed/subscribe/en/news/all/rss.xml' },
       { name: 'CISA', url: 'https://www.cisa.gov/cybersecurity-advisories/all.xml' },
+      { name: 'Treasury', url: gn('site:treasury.gov') },
+      { name: 'DOJ', url: gn('site:justice.gov') },
     ],
     africa: [
       { name: 'BBC Africa', url: 'https://feeds.bbci.co.uk/news/world/africa/rss.xml' },
       { name: 'News24', url: 'https://feeds.news24.com/articles/news24/TopStories/rss' },
+      { name: 'Africanews', url: 'https://www.africanews.com/feed/' },
+      { name: 'Jeune Afrique', url: 'https://www.jeuneafrique.com/feed/', lang: 'fr' },
+      { name: 'Premium Times', url: 'https://www.premiumtimesng.com/feed' },
     ],
     latam: [
       { name: 'BBC Latin America', url: 'https://feeds.bbci.co.uk/news/world/latin_america/rss.xml' },
@@ -79,6 +90,8 @@ export const VARIANT_FEEDS: Record<string, Record<string, ServerFeed[]>> = {
       { name: 'Primicias', url: 'https://www.primicias.ec/feed/', lang: 'es' },
       { name: 'Infobae Americas', url: 'https://www.infobae.com/feeds/rss/', lang: 'es' },
       { name: 'El Universo', url: 'https://www.eluniverso.com/arc/outboundfeeds/rss/category/noticias/?outputType=xml', lang: 'es' },
+      { name: 'Clarín', url: 'https://www.clarin.com/rss/lo-ultimo/', lang: 'es' },
+      { name: 'InSight Crime', url: 'https://insightcrime.org/feed/' },
     ],
     asia: [
       { name: 'BBC Asia', url: 'https://feeds.bbci.co.uk/news/world/asia/rss.xml' },
@@ -86,14 +99,21 @@ export const VARIANT_FEEDS: Record<string, Record<string, ServerFeed[]>> = {
       { name: 'Nikkei Asia', url: gn('site:asia.nikkei.com when:3d') },
       { name: 'CNA', url: 'https://www.channelnewsasia.com/api/v1/rss-outbound-feed?_format=xml' },
       { name: 'NDTV', url: 'https://feeds.feedburner.com/ndtvnews-top-stories' },
+      { name: 'South China Morning Post', url: gn('site:scmp.com when:2d') },
+      { name: 'The Hindu', url: 'https://www.thehindu.com/feeder/default.rss' },
+      { name: 'Asia News', url: gn('site:asianews.it when:3d') },
     ],
     energy: [
       { name: 'Oil & Gas', url: gn('(oil price OR OPEC OR "natural gas" OR pipeline OR LNG) when:2d') },
+      { name: 'Reuters Energy', url: gn('site:reuters.com energy when:2d') },
+      { name: 'Nuclear Energy', url: gn('("nuclear energy" OR "nuclear power" OR "nuclear reactor") when:3d') },
     ],
     thinktanks: [
       { name: 'Foreign Policy', url: 'https://foreignpolicy.com/feed/' },
       { name: 'Atlantic Council', url: 'https://www.atlanticcouncil.org/feed/' },
       { name: 'Foreign Affairs', url: 'https://www.foreignaffairs.com/rss.xml' },
+      { name: 'War on the Rocks', url: 'https://warontherocks.com/feed/' },
+      { name: 'CSIS', url: 'https://www.csis.org/feed' },
     ],
     crisis: [
       { name: 'CrisisWatch', url: 'https://www.crisisgroup.org/rss' },
@@ -101,7 +121,9 @@ export const VARIANT_FEEDS: Record<string, Record<string, ServerFeed[]>> = {
       { name: 'WHO', url: 'https://www.who.int/rss-feeds/news-english.xml' },
     ],
     layoffs: [
+      { name: 'Layoffs.fyi', url: gn('tech+company+layoffs+announced') },
       { name: 'TechCrunch Layoffs', url: 'https://techcrunch.com/tag/layoffs/feed/' },
+      { name: 'Layoffs News', url: gn('(layoffs OR "job cuts" OR "workforce reduction") when:3d') },
     ],
   },
 
@@ -167,6 +189,7 @@ export const VARIANT_FEEDS: Record<string, Record<string, ServerFeed[]>> = {
       { name: 'The New Stack', url: 'https://thenewstack.io/feed/' },
     ],
     layoffs: [
+      { name: 'Layoffs.fyi', url: gn('tech+layoffs+when:7d') },
       { name: 'TechCrunch Layoffs', url: 'https://techcrunch.com/tag/layoffs/feed/' },
     ],
     finance: [

@@ -1,4 +1,5 @@
 import type { AppContext, AppModule } from '@/app/app-context';
+import { replayPendingCalls, clearAllPendingCalls } from '@/app/pending-panel-data';
 import type { RelatedAsset } from '@/types';
 import type { TheaterPostureSummary } from '@/services/military-surge';
 import {
@@ -79,6 +80,7 @@ export class PanelLayoutManager implements AppModule {
   }
 
   destroy(): void {
+    clearAllPendingCalls();
     this.applyTimeRangeFilterDebounced.cancel();
     this.panelDragCleanupHandlers.forEach((cleanup) => cleanup());
     this.panelDragCleanupHandlers = [];
@@ -750,7 +752,11 @@ export class PanelLayoutManager implements AppModule {
       this.ctx.panels['service-status'] = serviceStatusPanel;
 
       this.lazyPanel('tech-readiness', () =>
-        import('@/components/TechReadinessPanel').then(m => new m.TechReadinessPanel()),
+        import('@/components/TechReadinessPanel').then(m => {
+          const p = new m.TechReadinessPanel();
+          void p.refresh();
+          return p;
+        }),
       );
 
       this.ctx.panels['macro-signals'] = new MacroSignalsPanel();
@@ -1137,8 +1143,9 @@ export class PanelLayoutManager implements AppModule {
     loader: () => Promise<T>,
     setup?: (panel: T) => void,
   ): void {
-    loader().then((panel) => {
+    loader().then(async (panel) => {
       this.ctx.panels[key] = panel as unknown as import('@/components/Panel').Panel;
+      await replayPendingCalls(key, panel);
       if (setup) setup(panel);
       const el = panel.getElement();
       this.makeDraggable(el, key);
