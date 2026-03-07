@@ -32,9 +32,6 @@ src-tauri/sidecar/node/*
 api/[[][[].*.js
 .claudedocs/
 
-# Copied shared configs (postinstall copies ../shared/ for Railway)
-scripts/shared/
-
 # Large generated data files (reproduced by scripts/)
 scripts/data/pizzint-processed.json
 scripts/data/osm-military-processed.json

@@ -5,7 +5,6 @@
   "main": "ais-relay.cjs",
   "scripts": {
     "start": "node ais-relay.cjs",
-    "postinstall": "mkdir -p shared && cp ../shared/*.json ../shared/*.cjs shared/ 2>/dev/null || true",
     "telegram:session": "node telegram/session-auth.mjs"
   },
   "dependencies": {
