@@ -946,6 +946,10 @@
         "ciiCritical": "حرج (81–100)"
       },
       "layerGuide": "دليل الطبقات",
+      "layerWarningTitle": "ملاحظة حول الأداء",
+      "layerWarningBody": "قد يؤثر تفعيل أكثر من {{threshold}} طبقة على أداء العرض ومعدل الإطارات.",
+      "layerWarningDismiss": "لا تظهر هذا مجددًا",
+      "layerWarningOk": "فهمت",
       "layersTitle": "الطبقات",
       "timeAll": "الكل",
       "views": {

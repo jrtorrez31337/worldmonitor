@@ -973,6 +973,10 @@
         "ciiCritical": "심각 (81–100)"
       },
       "layerGuide": "레이어 가이드",
+      "layerWarningTitle": "성능 안내",
+      "layerWarningBody": "{{threshold}}개 이상의 레이어를 활성화하면 렌더링 성능과 프레임 속도에 영향을 줄 수 있습니다.",
+      "layerWarningDismiss": "다시 표시하지 않기",
+      "layerWarningOk": "확인",
       "layersTitle": "레이어",
       "timeAll": "전체",
       "views": {

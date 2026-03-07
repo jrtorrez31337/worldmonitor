@@ -973,6 +973,10 @@
         "ciiCritical": "Κρίσιμο (81–100)"
       },
       "layerGuide": "Οδηγός Επιπέδων",
+      "layerWarningTitle": "Σημείωση απόδοσης",
+      "layerWarningBody": "Η ενεργοποίηση περισσότερων από {{threshold}} επιπέδων μπορεί να επηρεάσει την απόδοση απεικόνισης και τον ρυθμό καρέ.",
+      "layerWarningDismiss": "Να μην εμφανιστεί ξανά",
+      "layerWarningOk": "Κατάλαβα",
       "layersTitle": "Επίπεδα",
       "timeAll": "Όλα",
       "views": {

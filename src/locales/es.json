@@ -880,6 +880,10 @@
       },
       "layersTitle": "capas",
       "layerGuide": "Guía de capas",
+      "layerWarningTitle": "Aviso de rendimiento",
+      "layerWarningBody": "Activar más de {{threshold}} capas puede afectar el rendimiento de renderizado y la tasa de fotogramas.",
+      "layerWarningDismiss": "No volver a mostrar",
+      "layerWarningOk": "Entendido",
       "tooltip": {
         "earthquake": "Terremoto",
         "militaryAircraft": "Aviones militares",

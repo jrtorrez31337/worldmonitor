@@ -4582,7 +4582,7 @@ export class DeckGLMap {
   private layerWarningShown = false;
 
   private enforceLayerLimit(): void {
-    const WARN_THRESHOLD = 9;
+    const WARN_THRESHOLD = 10;
     const togglesEl = this.container.querySelector('.deckgl-layer-toggles');
     if (!togglesEl) return;
     const activeCount = Array.from(togglesEl.querySelectorAll<HTMLInputElement>('.layer-toggle input'))

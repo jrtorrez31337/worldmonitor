@@ -946,6 +946,10 @@
         "ciiCritical": "Critique (81–100)"
       },
       "layerGuide": "Guide des calques",
+      "layerWarningTitle": "Avis de performance",
+      "layerWarningBody": "Activer plus de {{threshold}} couches peut affecter les performances de rendu et la fréquence d'images.",
+      "layerWarningDismiss": "Ne plus afficher",
+      "layerWarningOk": "Compris",
       "layersTitle": "Couches",
       "timeAll": "Tout",
       "views": {

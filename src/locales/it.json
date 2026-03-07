@@ -880,6 +880,10 @@
       },
       "layersTitle": "Livelli",
       "layerGuide": "Guida ai livelli",
+      "layerWarningTitle": "Avviso sulle prestazioni",
+      "layerWarningBody": "Attivare più di {{threshold}} livelli può influire sulle prestazioni di rendering e sul frame rate.",
+      "layerWarningDismiss": "Non mostrare più",
+      "layerWarningOk": "Capito",
       "tooltip": {
         "earthquake": "Terremoto",
         "militaryAircraft": "Aerei militari",

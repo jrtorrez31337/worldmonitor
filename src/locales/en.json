@@ -974,6 +974,10 @@
         "ciiCritical": "Critical (81–100)"
       },
       "layerGuide": "Layer Guide",
+      "layerWarningTitle": "Performance notice",
+      "layerWarningBody": "Enabling more than {{threshold}} layers may impact rendering performance and frame rate.",
+      "layerWarningDismiss": "Don't show this again",
+      "layerWarningOk": "Got it",
       "layersTitle": "Layers",
       "timeAll": "All",
       "views": {

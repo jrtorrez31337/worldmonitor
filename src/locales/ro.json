@@ -973,6 +973,10 @@
         "ciiCritical": "Critic (81–100)"
       },
       "layerGuide": "Ghid de straturi",
+      "layerWarningTitle": "Notificare de performanță",
+      "layerWarningBody": "Activarea a mai mult de {{threshold}} straturi poate afecta performanța de randare și rata de cadre.",
+      "layerWarningDismiss": "Nu mai afișa",
+      "layerWarningOk": "Am înțeles",
       "layersTitle": "Straturi",
       "timeAll": "Toate",
       "views": {

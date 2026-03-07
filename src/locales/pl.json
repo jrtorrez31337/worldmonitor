@@ -863,6 +863,10 @@
       },
       "layersTitle": "Warstwy",
       "layerGuide": "Przewodnik po warstwach",
+      "layerWarningTitle": "Informacja o wydajności",
+      "layerWarningBody": "Włączenie więcej niż {{threshold}} warstw może wpłynąć na wydajność renderowania i liczbę klatek na sekundę.",
+      "layerWarningDismiss": "Nie pokazuj ponownie",
+      "layerWarningOk": "Rozumiem",
       "tooltip": {
         "earthquake": "Trzęsienie ziemi",
         "militaryAircraft": "Samolot wojskowy",

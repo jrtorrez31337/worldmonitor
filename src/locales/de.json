@@ -880,6 +880,10 @@
       },
       "layersTitle": "Schichten",
       "layerGuide": "Ebenenführer",
+      "layerWarningTitle": "Leistungshinweis",
+      "layerWarningBody": "Das Aktivieren von mehr als {{threshold}} Ebenen kann die Renderleistung und Bildrate beeinträchtigen.",
+      "layerWarningDismiss": "Nicht mehr anzeigen",
+      "layerWarningOk": "Verstanden",
       "tooltip": {
         "earthquake": "Erdbeben",
         "militaryAircraft": "Militärflugzeuge",

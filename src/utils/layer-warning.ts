@@ -1,3 +1,5 @@
+import { t } from '@/services/i18n';
+
 const DISMISS_KEY = 'wm-layer-warning-dismissed';
 let activeDialog: HTMLElement | null = null;
 
@@ -16,14 +18,14 @@ export function showLayerWarning(threshold: number): void {
         </svg>
       </div>
       <div class="layer-warn-text">
-        <strong>Performance notice</strong>
-        <p>Enabling more than ${threshold} layers may impact rendering performance and frame rate.</p>
+        <strong>${t('components.deckgl.layerWarningTitle')}</strong>
+        <p>${t('components.deckgl.layerWarningBody', { threshold })}</p>
       </div>
       <label class="layer-warn-dismiss">
         <input type="checkbox" />
-        <span>Don't show this again</span>
+        <span>${t('components.deckgl.layerWarningDismiss')}</span>
       </label>
-      <button class="layer-warn-ok">Got it</button>
+      <button class="layer-warn-ok">${t('components.deckgl.layerWarningOk')}</button>
     </div>`;
 
   const close = () => {

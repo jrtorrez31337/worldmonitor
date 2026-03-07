@@ -973,6 +973,10 @@
         "ciiCritical": "วิกฤต (81–100)"
       },
       "layerGuide": "คู่มือเลเยอร์",
+      "layerWarningTitle": "แจ้งเตือนประสิทธิภาพ",
+      "layerWarningBody": "การเปิดใช้งานมากกว่า {{threshold}} เลเยอร์อาจส่งผลต่อประสิทธิภาพการแสดงผลและอัตราเฟรม",
+      "layerWarningDismiss": "ไม่ต้องแสดงอีก",
+      "layerWarningOk": "รับทราบ",
       "layersTitle": "เลเยอร์",
       "timeAll": "ทั้งหมด",
       "views": {

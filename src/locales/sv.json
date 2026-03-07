@@ -582,6 +582,10 @@
       },
       "layersTitle": "Lager",
       "layerGuide": "Lagerguide",
+      "layerWarningTitle": "Prestandameddelande",
+      "layerWarningBody": "Att aktivera fler än {{threshold}} lager kan påverka renderingsprestanda och bildfrekvens.",
+      "layerWarningDismiss": "Visa inte igen",
+      "layerWarningOk": "Uppfattat",
       "tooltip": {
         "earthquake": "Jordbävning",
         "militaryAircraft": "Militära flygplan",

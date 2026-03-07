@@ -973,6 +973,10 @@
         "ciiCritical": "危急 (81–100)"
       },
       "layerGuide": "图层指南",
+      "layerWarningTitle": "性能提示",
+      "layerWarningBody": "启用超过 {{threshold}} 个图层可能会影响渲染性能和帧率。",
+      "layerWarningDismiss": "不再显示",
+      "layerWarningOk": "知道了",
       "layersTitle": "图层",
       "timeAll": "全部",
       "views": {

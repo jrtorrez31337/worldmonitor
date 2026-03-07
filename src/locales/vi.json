@@ -973,6 +973,10 @@
         "ciiCritical": "Nghiêm trọng (81–100)"
       },
       "layerGuide": "Hướng dẫn Lớp",
+      "layerWarningTitle": "Lưu ý về hiệu suất",
+      "layerWarningBody": "Bật hơn {{threshold}} lớp có thể ảnh hưởng đến hiệu suất hiển thị và tốc độ khung hình.",
+      "layerWarningDismiss": "Không hiển thị lại",
+      "layerWarningOk": "Đã hiểu",
       "layersTitle": "Lớp",
       "timeAll": "Tất cả",
       "views": {

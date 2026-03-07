@@ -582,6 +582,10 @@
       },
       "layersTitle": "Lagen",
       "layerGuide": "Lagengids",
+      "layerWarningTitle": "Prestatie-opmerking",
+      "layerWarningBody": "Het inschakelen van meer dan {{threshold}} lagen kan de renderprestaties en framesnelheid beïnvloeden.",
+      "layerWarningDismiss": "Niet meer tonen",
+      "layerWarningOk": "Begrepen",
       "tooltip": {
         "earthquake": "Aardbeving",
         "militaryAircraft": "Militaire vliegtuigen",

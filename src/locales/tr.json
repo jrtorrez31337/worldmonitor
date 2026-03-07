@@ -973,6 +973,10 @@
         "ciiCritical": "Kritik (81–100)"
       },
       "layerGuide": "Katman Rehberi",
+      "layerWarningTitle": "Performans bildirimi",
+      "layerWarningBody": "{{threshold}} adetten fazla katmanı etkinleştirmek, işleme performansını ve kare hızını etkileyebilir.",
+      "layerWarningDismiss": "Bir daha gösterme",
+      "layerWarningOk": "Anladım",
       "layersTitle": "Katmanlar",
       "timeAll": "Tumu",
       "views": {

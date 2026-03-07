@@ -973,6 +973,10 @@
         "ciiCritical": "危機的 (81–100)"
       },
       "layerGuide": "レイヤーガイド",
+      "layerWarningTitle": "パフォーマンスに関するお知らせ",
+      "layerWarningBody": "{{threshold}}個以上のレイヤーを有効にすると、描画パフォーマンスやフレームレートに影響する場合があります。",
+      "layerWarningDismiss": "今後表示しない",
+      "layerWarningOk": "了解",
       "layersTitle": "レイヤー",
       "timeAll": "全期間",
       "views": {

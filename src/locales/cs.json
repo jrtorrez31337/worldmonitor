@@ -963,6 +963,10 @@
         "ciiCritical": "Kritický (81–100)"
       },
       "layerGuide": "Průvodce vrstvami",
+      "layerWarningTitle": "Upozornění na výkon",
+      "layerWarningBody": "Povolení více než {{threshold}} vrstev může ovlivnit výkon vykreslování a snímkovou frekvenci.",
+      "layerWarningDismiss": "Příště nezobrazovat",
+      "layerWarningOk": "Rozumím",
       "layersTitle": "Vrstvy",
       "timeAll": "Vše",
       "views": {

@@ -973,6 +973,10 @@
         "ciiCritical": "Критичен (81–100)"
       },
       "layerGuide": "Ръководство на слои",
+      "layerWarningTitle": "Бележка за производителността",
+      "layerWarningBody": "Активирането на повече от {{threshold}} слоя може да повлияе на производителността и честотата на кадрите.",
+      "layerWarningDismiss": "Не показвай отново",
+      "layerWarningOk": "Разбрах",
       "layersTitle": "Слои",
       "timeAll": "Всички",
       "views": {
