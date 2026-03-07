@@ -34,6 +34,7 @@ export const ICAO_NOTAM_URL = 'https://dataservices.icao.int/api/notams-realtime
 export const DEFAULT_WATCHED_AIRPORTS = ['IST', 'ESB', 'SAW', 'LHR', 'FRA', 'CDG'];
 const BATCH_CONCURRENCY = 10;
 const MIN_FLIGHTS_FOR_CLOSURE = 10;
+const RESOLVED_STATUSES = new Set(['cancelled', 'landed', 'active', 'arrived', 'diverted']);
 const NOTAM_CLOSURE_QCODES = new Set(['FA', 'AH', 'AL', 'AW', 'AC', 'AM']);
 
 // ---------- XML Parser ----------
@@ -189,6 +190,14 @@ export function toProtoSource(s: string): FlightDelaySource {
 
 // ---------- Severity classification ----------
 
+export function severityFromCancelRate(cancelRate: number): string {
+  if (cancelRate >= 80) return 'severe';
+  if (cancelRate >= 50) return 'major';
+  if (cancelRate >= 20) return 'moderate';
+  if (cancelRate >= 10) return 'minor';
+  return 'normal';
+}
+
 export function determineSeverity(avgDelayMinutes: number, delayedPct?: number): string {
   const t = DELAY_SEVERITY_THRESHOLDS;
   if (avgDelayMinutes >= t.severe.avgDelayMinutes || (delayedPct && delayedPct >= t.severe.delayedPct)) return 'severe';
@@ -202,6 +211,7 @@ export function determineSeverity(avgDelayMinutes: number, delayedPct?: number):
 
 interface AviationStackFlight {
   flight_status?: string;
+  flight_date?: string;
   departure?: { delay?: number };
 }
 
@@ -256,9 +266,11 @@ async function fetchSingleAirport(
   apiKey: string, airport: MonitoredAirport
 ): Promise<FetchResult> {
   try {
+    const today = new Date().toISOString().slice(0, 10);
     const params = new URLSearchParams({
       access_key: apiKey,
       dep_iata: airport.iata,
+      flight_date: today,
       limit: '100',
     });
     const url = `${AVIATIONSTACK_URL}?${params}`;
@@ -289,8 +301,9 @@ function aggregateFlights(
 ): AirportDelayAlert | null {
   if (flights.length === 0) return null;
 
-  let delayed = 0, cancelled = 0, totalDelay = 0;
+  let delayed = 0, cancelled = 0, totalDelay = 0, resolved = 0;
   for (const f of flights) {
+    if (RESOLVED_STATUSES.has(f.flight_status ?? '')) resolved++;
     if (f.flight_status === 'cancelled') cancelled++;
     if (f.departure?.delay && f.departure.delay > 0) {
       delayed++;
@@ -298,7 +311,7 @@ function aggregateFlights(
     }
   }
 
-  const total = flights.length;
+  const total = resolved >= MIN_FLIGHTS_FOR_CLOSURE ? resolved : flights.length;
   const cancelledPct = (cancelled / total) * 100;
   const delayedPct = (delayed / total) * 100;
   const avgDelay = delayed > 0 ? Math.round(totalDelay / delayed) : 0;

@@ -11,6 +11,7 @@ import {
     fetchAviationStackDelays,
     fetchNotamClosures,
     determineSeverity,
+    severityFromCancelRate,
     parseStringArray,
     DEFAULT_WATCHED_AIRPORTS,
 } from './_shared';
@@ -58,7 +59,10 @@ export async function getAirportOpsSummary(
                     const totalFlights = alert?.totalFlights ?? 0;
                     const cancelRate = totalFlights > 0 ? (cancelledFlights / totalFlights) * 100 : 0;
 
-                    const sevStr = isClosed ? 'severe' : determineSeverity(avgDelay, delayPct);
+                    const cancelSev = isClosed ? 'severe' : severityFromCancelRate(cancelRate);
+                    const delaySev = determineSeverity(avgDelay, delayPct);
+                    const sevOrder = ['normal', 'minor', 'moderate', 'major', 'severe'];
+                    const sevStr = sevOrder.indexOf(cancelSev) >= sevOrder.indexOf(delaySev) ? cancelSev : delaySev;
                     const severity = `FLIGHT_DELAY_SEVERITY_${sevStr.toUpperCase()}` as FlightDelaySeverity;
 
                     const notamFlags: string[] = [];
