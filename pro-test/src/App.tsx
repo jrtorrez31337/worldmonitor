@@ -254,7 +254,7 @@ const SocialProof = () => (
       <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center mb-12">
         {[
           { value: "2M+", label: t('socialProof.uniqueVisitors') },
-          { value: "216K", label: t('socialProof.peakDailyUsers') },
+          { value: "421K", label: t('socialProof.peakDailyUsers') },
           { value: "190+", label: t('socialProof.countriesReached') },
           { value: "435+", label: t('socialProof.liveDataSources') },
         ].map((stat, i) => (
@@ -269,13 +269,9 @@ const SocialProof = () => (
           "{t('socialProof.quote')}"
         </p>
         <footer className="mt-6 flex items-center justify-center gap-3">
-          <div className="text-sm">
-            <span className="text-wm-text font-bold">Elie Habib</span>
-            <span className="text-wm-muted"> — {t('socialProof.ceo')} </span>
-            <a href="https://anghami.com" target="_blank" rel="noreferrer" className="text-wm-muted underline underline-offset-4 hover:text-wm-text transition-colors">Anghami</a>
-            <span className="text-wm-muted">, {t('socialProof.asToldTo')} </span>
-            <a href="https://www.wired.me/story/the-music-streaming-ceo-who-built-a-global-war-map" target="_blank" rel="noreferrer" className="text-wm-text underline underline-offset-4 hover:text-wm-green transition-colors">WIRED</a>
-          </div>
+          <a href="https://www.wired.me/story/the-music-streaming-ceo-who-built-a-global-war-map" target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 text-wm-muted hover:text-wm-text transition-colors">
+            <img src="https://upload.wikimedia.org/wikipedia/commons/9/95/Wired_logo.svg" alt="WIRED" className="h-5 brightness-0 invert opacity-60 hover:opacity-100 transition-opacity" />
+          </a>
         </footer>
       </blockquote>
     </div>
@@ -291,7 +287,7 @@ const TwoPathSplit = () => (
         <h3 className="font-display text-2xl font-bold mb-2">{t('twoPath.proTitle')}</h3>
         <p className="text-sm text-wm-muted mb-6">{t('twoPath.proDesc')}</p>
         <ul className="space-y-3 mb-8">
-          {[t('twoPath.proF1'), t('twoPath.proF2'), t('twoPath.proF3'), t('twoPath.proF4'), t('twoPath.proF5'), t('twoPath.proF6')].map((f, i) => (
+          {[t('twoPath.proF1'), t('twoPath.proF2'), t('twoPath.proF3'), t('twoPath.proF4'), t('twoPath.proF5'), t('twoPath.proF6'), t('twoPath.proF7'), t('twoPath.proF8'), t('twoPath.proF9')].map((f, i) => (
             <li key={i} className="flex items-start gap-3 text-sm">
               <Check className="w-4 h-4 shrink-0 mt-0.5 text-wm-green" aria-hidden="true" />
               <span className="text-wm-muted">{f}</span>
@@ -307,7 +303,8 @@ const TwoPathSplit = () => (
         <h3 className="font-display text-2xl font-bold mb-2">{t('twoPath.entTitle')}</h3>
         <p className="text-sm text-wm-muted mb-6">{t('twoPath.entDesc')}</p>
         <ul className="space-y-3 mb-8">
-          {[t('twoPath.entF1'), t('twoPath.entF2'), t('twoPath.entF3'), t('twoPath.entF4'), t('twoPath.entF5')].map((f, i) => (
+          <li className="text-xs font-mono text-wm-green uppercase tracking-wider mb-1">{t('twoPath.entF1')}</li>
+          {[t('twoPath.entF2'), t('twoPath.entF3'), t('twoPath.entF4'), t('twoPath.entF5'), t('twoPath.entF6'), t('twoPath.entF7'), t('twoPath.entF8'), t('twoPath.entF9'), t('twoPath.entF10')].map((f, i) => (
             <li key={i} className="flex items-start gap-3 text-sm">
               <Check className="w-4 h-4 shrink-0 mt-0.5 text-wm-muted" aria-hidden="true" />
               <span className="text-wm-muted">{f}</span>
