@@ -1,4 +1,5 @@
 import type { Sector, Commodity, MarketSymbol } from '@/types';
+import cryptoConfig from '../../shared/crypto.json';
 
 export const SECTORS: Sector[] = [
   { symbol: 'XLK', name: 'Tech' },
@@ -55,22 +56,5 @@ export const MARKET_SYMBOLS: MarketSymbol[] = [
   { symbol: 'BAC', name: 'BofA', display: 'BAC' },
 ];
 
-// Canonical crypto list — keep in sync with server/_shared.ts CRYPTO_META & scripts/seed-crypto-quotes.mjs
-export const CRYPTO_IDS = [
-  'bitcoin', 'ethereum', 'binancecoin', 'solana',
-  'ripple', 'cardano', 'dogecoin', 'tron',
-  'avalanche-2', 'chainlink',
-] as const;
-
-export const CRYPTO_MAP: Record<string, { name: string; symbol: string }> = {
-  bitcoin: { name: 'Bitcoin', symbol: 'BTC' },
-  ethereum: { name: 'Ethereum', symbol: 'ETH' },
-  binancecoin: { name: 'BNB', symbol: 'BNB' },
-  solana: { name: 'Solana', symbol: 'SOL' },
-  ripple: { name: 'XRP', symbol: 'XRP' },
-  cardano: { name: 'Cardano', symbol: 'ADA' },
-  dogecoin: { name: 'Dogecoin', symbol: 'DOGE' },
-  tron: { name: 'TRON', symbol: 'TRX' },
-  'avalanche-2': { name: 'Avalanche', symbol: 'AVAX' },
-  chainlink: { name: 'Chainlink', symbol: 'LINK' },
-};
+export const CRYPTO_IDS = cryptoConfig.ids as readonly string[];
+export const CRYPTO_MAP: Record<string, { name: string; symbol: string }> = cryptoConfig.meta;

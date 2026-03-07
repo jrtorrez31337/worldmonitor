@@ -1260,10 +1260,10 @@ async function seedEtfFlows() {
 }
 
 // Crypto Quotes — CoinGecko → CoinPaprika fallback
-// Keep in sync with src/config/markets.ts CRYPTO_MAP & server/_shared.ts CRYPTO_META
-const CRYPTO_IDS = ['bitcoin', 'ethereum', 'binancecoin', 'solana', 'ripple', 'cardano', 'dogecoin', 'tron', 'avalanche-2', 'chainlink'];
-const CRYPTO_META = { bitcoin: { name: 'Bitcoin', symbol: 'BTC' }, ethereum: { name: 'Ethereum', symbol: 'ETH' }, binancecoin: { name: 'BNB', symbol: 'BNB' }, solana: { name: 'Solana', symbol: 'SOL' }, ripple: { name: 'XRP', symbol: 'XRP' }, cardano: { name: 'Cardano', symbol: 'ADA' }, dogecoin: { name: 'Dogecoin', symbol: 'DOGE' }, tron: { name: 'TRON', symbol: 'TRX' }, 'avalanche-2': { name: 'Avalanche', symbol: 'AVAX' }, chainlink: { name: 'Chainlink', symbol: 'LINK' } };
-const CRYPTO_PAPRIKA_MAP = { bitcoin: 'btc-bitcoin', ethereum: 'eth-ethereum', binancecoin: 'bnb-binance-coin', solana: 'sol-solana', ripple: 'xrp-ripple', cardano: 'ada-cardano', dogecoin: 'doge-dogecoin', tron: 'trx-tron', 'avalanche-2': 'avax-avalanche', chainlink: 'link-chainlink' };
+const _cryptoCfg = require('../shared/crypto.json');
+const CRYPTO_IDS = _cryptoCfg.ids;
+const CRYPTO_META = _cryptoCfg.meta;
+const CRYPTO_PAPRIKA_MAP = _cryptoCfg.coinpaprika;
 const CRYPTO_SEED_TTL = 3600; // 1h
 
 async function fetchCryptoCoinPaprika() {

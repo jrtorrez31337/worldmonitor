@@ -1,30 +1,18 @@
 #!/usr/bin/env node
 
+import { createRequire } from 'module';
 import { loadEnvFile, CHROME_UA, runSeed, sleep } from './_seed-utils.mjs';
+
+const require = createRequire(import.meta.url);
+const cryptoConfig = require('../shared/crypto.json');
 
 loadEnvFile(import.meta.url);
 
 const CANONICAL_KEY = 'market:crypto:v1';
 const CACHE_TTL = 3600; // 1 hour
 
-// Keep in sync with src/config/markets.ts CRYPTO_MAP & server/_shared.ts CRYPTO_META
-const CRYPTO_IDS = [
-  'bitcoin', 'ethereum', 'binancecoin', 'solana',
-  'ripple', 'cardano', 'dogecoin', 'tron',
-  'avalanche-2', 'chainlink',
-];
-const CRYPTO_META = {
-  bitcoin: { name: 'Bitcoin', symbol: 'BTC' },
-  ethereum: { name: 'Ethereum', symbol: 'ETH' },
-  binancecoin: { name: 'BNB', symbol: 'BNB' },
-  solana: { name: 'Solana', symbol: 'SOL' },
-  ripple: { name: 'XRP', symbol: 'XRP' },
-  cardano: { name: 'Cardano', symbol: 'ADA' },
-  dogecoin: { name: 'Dogecoin', symbol: 'DOGE' },
-  tron: { name: 'TRON', symbol: 'TRX' },
-  'avalanche-2': { name: 'Avalanche', symbol: 'AVAX' },
-  chainlink: { name: 'Chainlink', symbol: 'LINK' },
-};
+const CRYPTO_IDS = cryptoConfig.ids;
+const CRYPTO_META = cryptoConfig.meta;
 
 async function fetchWithRateLimitRetry(url, maxAttempts = 5, headers = { Accept: 'application/json', 'User-Agent': CHROME_UA }) {
   for (let i = 0; i < maxAttempts; i++) {
@@ -44,18 +32,7 @@ async function fetchWithRateLimitRetry(url, maxAttempts = 5, headers = { Accept:
   throw new Error('CoinGecko rate limit exceeded after retries');
 }
 
-const COINPAPRIKA_ID_MAP = {
-  bitcoin: 'btc-bitcoin',
-  ethereum: 'eth-ethereum',
-  binancecoin: 'bnb-binance-coin',
-  solana: 'sol-solana',
-  ripple: 'xrp-ripple',
-  cardano: 'ada-cardano',
-  dogecoin: 'doge-dogecoin',
-  tron: 'trx-tron',
-  'avalanche-2': 'avax-avalanche',
-  chainlink: 'link-chainlink',
-};
+const COINPAPRIKA_ID_MAP = cryptoConfig.coinpaprika;
 
 async function fetchFromCoinGecko() {
   const ids = CRYPTO_IDS.join(',');

@@ -2,6 +2,7 @@
  * Shared helpers, types, and constants for the market service handler RPCs.
  */
 import { CHROME_UA, yahooGate } from '../../../_shared/constants';
+import cryptoConfig from '../../../../shared/crypto.json';
 
 // ========================================================================
 // Relay helpers (Railway proxy for Yahoo when Vercel IPs are rate-limited)
@@ -69,19 +70,7 @@ export const YAHOO_ONLY_SYMBOLS = new Set([
   'GC=F', 'CL=F', 'NG=F', 'SI=F', 'HG=F',
 ]);
 
-// Known crypto IDs and their metadata — keep in sync with src/config/markets.ts & scripts/seed-crypto-quotes.mjs
-export const CRYPTO_META: Record<string, { name: string; symbol: string }> = {
-  bitcoin: { name: 'Bitcoin', symbol: 'BTC' },
-  ethereum: { name: 'Ethereum', symbol: 'ETH' },
-  binancecoin: { name: 'BNB', symbol: 'BNB' },
-  solana: { name: 'Solana', symbol: 'SOL' },
-  ripple: { name: 'XRP', symbol: 'XRP' },
-  cardano: { name: 'Cardano', symbol: 'ADA' },
-  dogecoin: { name: 'Dogecoin', symbol: 'DOGE' },
-  tron: { name: 'TRON', symbol: 'TRX' },
-  'avalanche-2': { name: 'Avalanche', symbol: 'AVAX' },
-  chainlink: { name: 'Chainlink', symbol: 'LINK' },
-};
+export const CRYPTO_META: Record<string, { name: string; symbol: string }> = cryptoConfig.meta;
 
 // ========================================================================
 // Types
@@ -279,18 +268,9 @@ export async function fetchCoinGeckoMarkets(
 // CoinPaprika fallback fetcher
 // ========================================================================
 
-// CoinGecko ID → CoinPaprika ID mapping
+// CoinGecko ID → CoinPaprika ID mapping (shared ids + stablecoin-specific)
 const COINPAPRIKA_ID_MAP: Record<string, string> = {
-  bitcoin: 'btc-bitcoin',
-  ethereum: 'eth-ethereum',
-  binancecoin: 'bnb-binance-coin',
-  solana: 'sol-solana',
-  ripple: 'xrp-ripple',
-  cardano: 'ada-cardano',
-  dogecoin: 'doge-dogecoin',
-  tron: 'trx-tron',
-  'avalanche-2': 'avax-avalanche',
-  chainlink: 'link-chainlink',
+  ...cryptoConfig.coinpaprika,
   tether: 'usdt-tether',
   'usd-coin': 'usdc-usd-coin',
   dai: 'dai-dai',
