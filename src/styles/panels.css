@@ -1537,7 +1537,8 @@
 }
 
 .wc-row.wc-home {
-  background: color-mix(in srgb, var(--accent) 5%, transparent);
+  background: color-mix(in srgb, var(--semantic-positive, #44ff88) 8%, transparent);
+  border-left: 2px solid color-mix(in srgb, var(--semantic-positive, #44ff88) 40%, transparent);
 }
 
 .wc-drag-handle {
@@ -1584,7 +1585,7 @@
 .wc-home-tag {
   margin-left: 4px;
   font-size: 11px;
-  color: var(--accent);
+  color: var(--semantic-positive, #44ff88);
 }
 
 .wc-detail {
