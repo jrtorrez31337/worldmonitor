@@ -47,8 +47,14 @@ async function fetchWithRateLimitRetry(url, maxAttempts = 5, headers = { Accept:
 const COINPAPRIKA_ID_MAP = {
   bitcoin: 'btc-bitcoin',
   ethereum: 'eth-ethereum',
+  binancecoin: 'bnb-binance-coin',
   solana: 'sol-solana',
   ripple: 'xrp-ripple',
+  cardano: 'ada-cardano',
+  dogecoin: 'doge-dogecoin',
+  tron: 'trx-tron',
+  'avalanche-2': 'avax-avalanche',
+  chainlink: 'link-chainlink',
 };
 
 async function fetchFromCoinGecko() {
