@@ -168,11 +168,13 @@ async function fetchSubmarineCables() {
   if (!cableGeoResp.ok) throw new Error(`cable-geo.json: HTTP ${cableGeoResp.status}`);
   const cableGeo = await cableGeoResp.json();
 
+  const allIdSet = new Set(allIds);
   const routeMap = new Map();
   for (const feat of cableGeo.features) {
     const id = feat.properties?.id;
     if (id) {
-      const baseId = id.replace(/-\d+$/, '');
+      const stripped = id.replace(/-\d+$/, '');
+      const baseId = allIdSet.has(stripped) ? stripped : id;
       if (!routeMap.has(baseId)) routeMap.set(baseId, []);
       if (feat.geometry?.type === 'MultiLineString') {
         for (const segment of feat.geometry.coordinates) {
@@ -286,7 +288,7 @@ async function fetchSubmarineCables() {
 }
 
 function validate(data) {
-  return data?.cables?.length >= 50;
+  return data?.cables?.length >= 75;
 }
 
 runSeed('infrastructure', 'submarine-cables', CANONICAL_KEY, fetchSubmarineCables, {

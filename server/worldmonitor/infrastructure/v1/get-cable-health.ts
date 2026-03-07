@@ -92,11 +92,14 @@ const CABLE_NAME_MAP: Record<string, string> = {
   'NCP': 'new_cross_pacific_ncp_cable_system',
   'JUPITER': 'jupiter',
   'EQUIANO': 'equiano',
-  'ACE': 'africa_coast_to_europe_ace',
+  'ACE CABLE': 'africa_coast_to_europe_ace',
+  'AFRICA COAST TO EUROPE': 'africa_coast_to_europe_ace',
   'MAINONE': 'mainone',
-  'SAFE': 'safe',
-  'TEAMS': 'the_east_african_marine_system_teams',
-  'PEACE': 'peace_cable',
+  'SAFE CABLE': 'safe',
+  'SAT-3': 'safe',
+  'TEAMS CABLE': 'the_east_african_marine_system_teams',
+  'EAST AFRICAN MARINE': 'the_east_african_marine_system_teams',
+  'PEACE CABLE': 'peace_cable',
   'IMEWE': 'imewe',
   'AAE-1': 'asia_africa_europe_1_aae_1',
   'AAG': 'asia_america_gateway_aag_cable_system',
@@ -200,10 +203,16 @@ export function parseCoordinates(text: string): [number, number][] {
   return coords;
 }
 
+const _cableNamePatterns = new Map(
+  Object.entries(CABLE_NAME_MAP).map(([name, id]) => [
+    new RegExp(`\\b${name.replace(/[-/]/g, '\\$&')}\\b`, 'i'),
+    id,
+  ]),
+);
+
 export function matchCableByName(text: string): string | null {
-  const upper = text.toUpperCase();
-  for (const [name, id] of Object.entries(CABLE_NAME_MAP)) {
-    if (upper.includes(name)) return id;
+  for (const [pattern, id] of _cableNamePatterns) {
+    if (pattern.test(text)) return id;
   }
   return null;
 }
