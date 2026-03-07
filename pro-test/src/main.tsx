@@ -4,6 +4,8 @@ import App, { renderTurnstileWidgets } from './App.tsx';
 import { initI18n } from './i18n';
 import './index.css';
 
+const TURNSTILE_SCRIPT_SELECTOR = 'script[src^="https://challenges.cloudflare.com/turnstile/v0/api.js"]';
+
 initI18n().then(() => {
   createRoot(document.getElementById('root')!).render(
     <StrictMode>
@@ -11,12 +13,23 @@ initI18n().then(() => {
     </StrictMode>,
   );
 
-  // Explicit Turnstile rendering after React mount.
-  // Polls until the async Turnstile script is ready (max ~10s).
-  let attempts = 0;
+  // Render widgets once React has mounted and the async Turnstile script is ready.
+  let initialized = false;
   const initWidgets = () => {
-    if (window.turnstile) { renderTurnstileWidgets(); return; }
-    if (++attempts < 30) setTimeout(initWidgets, 300);
+    if (initialized || !window.turnstile) return false;
+    renderTurnstileWidgets();
+    initialized = true;
+    return true;
   };
-  setTimeout(initWidgets, 100);
+
+  const turnstileScript = document.querySelector<HTMLScriptElement>(TURNSTILE_SCRIPT_SELECTOR);
+  turnstileScript?.addEventListener('load', () => {
+    initWidgets();
+  }, { once: true });
+
+  if (!initWidgets()) {
+    const retryInterval = window.setInterval(() => {
+      if (initWidgets()) window.clearInterval(retryInterval);
+    }, 500);
+  }
 });
