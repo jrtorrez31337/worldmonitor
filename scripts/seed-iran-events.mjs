@@ -66,6 +66,33 @@ const LOCATION_COORDS = {
   'haji omeran':   { lat: 36.6500, lon: 45.0500 },
   'nineveh':       { lat: 36.3500, lon: 43.1500 },
   'rashidiya':     { lat: 36.4000, lon: 43.1000 },
+  'gaza':          { lat: 31.3547, lon: 34.3088 },
+  'riyadh':        { lat: 24.7136, lon: 46.6753 },
+  'sulaimaniyah':  { lat: 35.5613, lon: 45.4306 },
+  'sulaimani':     { lat: 35.5613, lon: 45.4306 },
+  'haifa':         { lat: 32.7940, lon: 34.9896 },
+  'karaj':         { lat: 35.8400, lon: 50.9391 },
+  'shahran':       { lat: 35.7900, lon: 51.2900 },
+  'kouhak':        { lat: 35.6200, lon: 51.4800 },
+  'hamadan':       { lat: 34.7988, lon: 48.5146 },
+  'hamedan':       { lat: 34.7988, lon: 48.5146 },
+  'yazd':          { lat: 31.8974, lon: 54.3569 },
+  'kish':          { lat: 26.5400, lon: 53.9800 },
+  'qazvin':        { lat: 36.2688, lon: 50.0041 },
+  'najafabad':     { lat: 32.6340, lon: 51.3670 },
+  'malayer':       { lat: 34.2968, lon: 48.8234 },
+  'mehran':        { lat: 33.1222, lon: 46.1646 },
+  'aqaba':         { lat: 29.5267, lon: 35.0078 },
+  'eilat':         { lat: 29.5577, lon: 34.9519 },
+  'choman':        { lat: 36.6269, lon: 44.8856 },
+  'baqer shahr':   { lat: 35.5400, lon: 51.3900 },
+  'jubail':        { lat: 27.0046, lon: 49.6225 },
+  'shaybah':       { lat: 22.5200, lon: 54.0000 },
+  'al dhafra':     { lat: 24.2500, lon: 54.5500 },
+  'juffair':       { lat: 26.2167, lon: 50.6000 },
+  'qeshm':         { lat: 26.9500, lon: 56.2700 },
+  'pakdasht':      { lat: 35.4747, lon: 51.6856 },
+  'tasluja':       { lat: 35.5100, lon: 45.3700 },
 };
 
 const CATEGORY_MAP = {
@@ -142,7 +169,7 @@ function validate(data) {
 
 runSeed('conflict', 'iran-events', CANONICAL_KEY, fetchIranEvents, {
   validateFn: validate,
-  ttlSeconds: 86400,
+  ttlSeconds: 172800,
   sourceVersion: 'liveuamap-manual-v1',
 }).catch((err) => {
   console.error('FATAL:', err.message || err);
