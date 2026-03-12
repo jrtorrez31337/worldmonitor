@@ -43,6 +43,14 @@ import { DataLoaderManager } from '@/app/data-loader';
 import { EventHandlerManager } from '@/app/event-handlers';
 import { resolveUserRegion, resolvePreciseUserCoordinates, type PreciseCoordinates } from '@/utils/user-location';
 import { showProBanner } from '@/components/ProBanner';
+import {
+  CorrelationEngine,
+  militaryAdapter,
+  escalationAdapter,
+  economicAdapter,
+  disasterAdapter,
+} from '@/services/correlation-engine';
+import type { CorrelationPanel } from '@/components/CorrelationPanel';
 
 const CYBER_LAYER_ENABLED = import.meta.env.VITE_ENABLE_CYBER_LAYER === 'true';
 
@@ -374,6 +382,8 @@ export class App {
       exportPanel: null,
       unifiedSettings: null,
       pizzintIndicator: null,
+      llmStatusIndicator: null,
+      correlationEngine: null,
       countryBriefPage: null,
       countryTimeline: null,
       positivePanel: null,
@@ -555,7 +565,16 @@ export class App {
     this.eventHandlers.setupPlaybackControl();
     this.eventHandlers.setupStatusPanel();
     this.eventHandlers.setupPizzIntIndicator();
+    this.eventHandlers.setupLlmStatusIndicator();
     this.eventHandlers.setupExportPanel();
+
+    // Correlation engine
+    const correlationEngine = new CorrelationEngine();
+    correlationEngine.registerAdapter(militaryAdapter);
+    correlationEngine.registerAdapter(escalationAdapter);
+    correlationEngine.registerAdapter(economicAdapter);
+    correlationEngine.registerAdapter(disasterAdapter);
+    this.state.correlationEngine = correlationEngine;
     this.eventHandlers.setupUnifiedSettings();
 
     // Phase 4: SearchManager, MapLayerHandlers, CountryIntel
@@ -588,6 +607,16 @@ export class App {
     await this.primeVisiblePanelData(true);
     window.addEventListener('scroll', this.handleViewportPrime, { passive: true });
     window.addEventListener('resize', this.handleViewportPrime);
+
+    // Initial correlation engine run
+    if (this.state.correlationEngine) {
+      void this.state.correlationEngine.run(this.state).then(() => {
+        for (const domain of ['military', 'escalation', 'economic', 'disaster'] as const) {
+          const panel = this.state.panels[`${domain}-correlation`] as CorrelationPanel | undefined;
+          panel?.updateCards(this.state.correlationEngine!.getCards(domain));
+        }
+      });
+    }
 
     startLearning();
 
@@ -814,5 +843,20 @@ export class App {
         return this.dataLoader.loadIntelligenceSignals();
       }, 15 * 60 * 1000);
     }
+
+    // Correlation engine refresh
+    this.refreshScheduler.scheduleRefresh(
+      'correlation-engine',
+      async () => {
+        const engine = this.state.correlationEngine;
+        if (!engine) return;
+        await engine.run(this.state);
+        for (const domain of ['military', 'escalation', 'economic', 'disaster'] as const) {
+          const panel = this.state.panels[`${domain}-correlation`] as CorrelationPanel | undefined;
+          panel?.updateCards(engine.getCards(domain));
+        }
+      },
+      5 * 60 * 1000,
+    );
   }
 }
