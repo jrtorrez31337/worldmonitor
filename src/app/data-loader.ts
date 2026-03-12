@@ -1338,7 +1338,7 @@ export class DataLoaderManager implements AppModule {
 
   async loadPredictions(): Promise<void> {
     try {
-      const predictions = await fetchPredictions();
+      const predictions = await fetchPredictions({ region: this.ctx.resolvedLocation });
       this.ctx.latestPredictions = predictions;
       (this.ctx.panels['polymarket'] as PredictionPanel | undefined)?.renderPredictions(predictions);
 
