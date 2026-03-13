@@ -133,6 +133,7 @@ export class MapContainer {
   private cachedEscalationFlights: MilitaryFlight[] | null = null;
   private cachedEscalationVessels: MilitaryVessel[] | null = null;
   private cachedImageryScenes: ImageryScene[] | null = null;
+  private cachedWebcams: Array<import('@/generated/client/worldmonitor/webcam/v1/service_client').WebcamEntry | import('@/generated/client/worldmonitor/webcam/v1/service_client').WebcamCluster> | null = null;
 
   constructor(container: HTMLElement, initialState: MapContainerState, preferGlobe = false) {
     this.container = container;
@@ -295,6 +296,14 @@ export class MapContainer {
     if (this.cachedHotspotActivity) this.updateHotspotActivity(this.cachedHotspotActivity);
     if (this.cachedEscalationFlights && this.cachedEscalationVessels) this.updateMilitaryForEscalation(this.cachedEscalationFlights, this.cachedEscalationVessels);
     if (this.cachedImageryScenes) this.setImageryScenes(this.cachedImageryScenes);
+    if (this.cachedWebcams) {
+      // @ts-ignore
+      if (this.useGlobe) this.globeMap?.setWebcams(this.cachedWebcams);
+      // @ts-ignore
+      else if (this.useDeckGL) this.deckGLMap?.setWebcams(this.cachedWebcams);
+      // @ts-ignore
+      else this.svgMap?.setWebcams(this.cachedWebcams);
+    }
   }
 
   public isGlobeMode(): boolean {
@@ -398,6 +407,16 @@ export class MapContainer {
     this.cachedImageryScenes = scenes;
     if (this.useGlobe) { this.globeMap?.setImageryScenes(scenes); return; }
     if (this.useDeckGL) { this.deckGLMap?.setImageryScenes(scenes); }
+  }
+
+  public setWebcams(markers: Array<import('@/generated/client/worldmonitor/webcam/v1/service_client').WebcamEntry | import('@/generated/client/worldmonitor/webcam/v1/service_client').WebcamCluster>): void {
+    this.cachedWebcams = markers;
+    // @ts-ignore
+    if (this.useGlobe) { this.globeMap?.setWebcams(markers); return; }
+    // @ts-ignore
+    if (this.useDeckGL) { this.deckGLMap?.setWebcams(markers); }
+    // @ts-ignore
+    else { this.svgMap?.setWebcams(markers); }
   }
 
   public setWeatherAlerts(alerts: WeatherAlert[]): void {

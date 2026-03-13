@@ -44,6 +44,7 @@ import type { GpsJamHex } from '@/services/gps-interference';
 import type { SatellitePosition } from '@/services/satellites';
 import type { ImageryScene } from '@/generated/server/worldmonitor/imagery/v1/service_server';
 import { isAllowedPreviewUrl } from '@/utils/imagery-preview';
+import { getCategoryStyle } from '@/services/webcams';
 
 const SAT_COUNTRY_COLORS: Record<string, string> = { CN: '#ff2020', RU: '#ff8800', US: '#4488ff', EU: '#44cc44', KR: '#aa66ff', IN: '#ff66aa', TR: '#ff4466', OTHER: '#ccccff' };
 const SAT_TYPE_EMOJI: Record<string, string> = { sar: '\u{1F4E1}', optical: '\u{1F4F7}', military: '\u{1F396}', sigint: '\u{1F4FB}' };
@@ -312,6 +313,18 @@ interface ImagerySceneMarker extends BaseMarker {
   mode: string;
   previewUrl: string;
 }
+interface WebcamMarkerData extends BaseMarker {
+  _kind: 'webcam';
+  webcamId: string;
+  title: string;
+  category: string;
+  country: string;
+}
+interface WebcamClusterData extends BaseMarker {
+  _kind: 'webcam-cluster';
+  count: number;
+  categories: string[];
+}
 interface GlobePath {
   id: string;
   name: string;
@@ -346,7 +359,8 @@ type GlobeMarker =
   | ConflictZoneMarker | MilBaseMarker | NuclearSiteMarker | IrradiatorSiteMarker | SpaceportSiteMarker
   | EarthquakeMarker | EconomicMarker | DatacenterMarker | WaterwayMarker | MineralMarker
   | FlightDelayMarker | NotamRingMarker | CableAdvisoryMarker | RepairShipMarker | AisDisruptionMarker
-  | NewsLocationMarker | FlashMarker | SatelliteMarker | SatFootprintMarker | ImagerySceneMarker;
+  | NewsLocationMarker | FlashMarker | SatelliteMarker | SatFootprintMarker | ImagerySceneMarker
+  | WebcamMarkerData | WebcamClusterData;
 
 interface GlobeControlsLike {
   autoRotate: boolean;
@@ -431,6 +445,7 @@ export class GlobeMap {
   private stormConePolygons: GlobePolygon[] = [];
   private satelliteFootprintMarkers: SatFootprintMarker[] = [];
   private imagerySceneMarkers: ImagerySceneMarker[] = [];
+  private webcamMarkers: (WebcamMarkerData | WebcamClusterData)[] = [];
   private imageryFootprintPolygons: GlobePolygon[] = [];
   private lastImageryCenter: { lat: number; lon: number } | null = null;
   private imageryFetchTimer: ReturnType<typeof setTimeout> | null = null;
@@ -1068,6 +1083,15 @@ export class GlobeMap {
     } else if (d._kind === 'imageryScene') {
       el.innerHTML = GlobeMap.wrapHit(`<div style="font-size:11px;color:#00b4ff;text-shadow:0 0 4px #00b4ff88;">&#128752;</div>`);
       el.title = `${d.satellite} ${d.datetime}`;
+    } else if (d._kind === 'webcam') {
+      const style = getCategoryStyle(d.category);
+      const mode = localStorage.getItem('wm-webcam-marker-mode') || 'icon';
+      const emoji = mode === 'emoji' ? style.emoji : '\u{1F4F7}';
+      el.innerHTML = GlobeMap.wrapHit(`<span style="background:${style.color}33;border:1px solid ${style.color}88;border-radius:10px;padding:1px 5px;font-size:12px;">${emoji}</span>`);
+      el.title = d.title;
+    } else if (d._kind === 'webcam-cluster') {
+      el.innerHTML = GlobeMap.wrapHit(`<span style="background:#00d4ff33;border:1px solid #00d4ff88;border-radius:12px;padding:2px 7px;font-size:11px;font-weight:bold;color:#00d4ff;">${d.count}</span>`);
+      el.title = `${d.count} webcams`;
     } else if (d._kind === 'flash') {
       el.style.pointerEvents = 'none';
       el.innerHTML = `
@@ -1097,6 +1121,11 @@ export class GlobeMap {
         keywords: [],
         escalationScore: d.escalationScore as Hotspot['escalationScore'],
       });
+    }
+    if (d._kind === 'webcam-cluster' && this.globe) {
+      const pov = this.globe.pointOfView();
+      // Fly to cluster and zoom in (reduce altitude by 60%)
+      this.globe.pointOfView({ lat: d._lat, lng: d._lng, altitude: pov.altitude * 0.4 }, 800);
     }
     this.showMarkerTooltip(d, anchor);
   }
@@ -1290,6 +1319,38 @@ export class GlobeMap {
         const safeHref = escapeHtml(new URL(d.previewUrl!).href);
         html += `<br><img src="${safeHref}" referrerpolicy="no-referrer" style="max-width:180px;max-height:120px;margin-top:4px;border-radius:4px;" class="imagery-preview">`;
       }
+    } else if (d._kind === 'webcam') {
+      const previewId = `wm-webcam-${d.webcamId}`;
+      html = `<span style="color:#00d4ff;font-weight:bold;">\u{1F4F7} ${esc(d.title.slice(0, 50))}</span>` +
+             `<br><span style="opacity:.7;font-size:11px;">${esc(d.country)} \u00B7 ${esc(d.category)}</span>` +
+             `<br><div id="${previewId}" style="margin-top:4px;"><span style="opacity:.5;font-size:11px;">Loading preview...</span></div>` +
+             `<a href="https://www.windy.com/webcams/${esc(d.webcamId)}" target="_blank" rel="noopener" style="color:#00d4ff;font-size:11px;">Open on Windy \u2197</a>` +
+             `<div style="opacity:.4;font-size:9px;margin-top:4px;">Powered by Windy</div>`;
+      // Async-fetch image and swap placeholder using DOM methods (not innerHTML) for the URL
+      setTimeout(() => {
+        import('@/services/webcams').then(({ fetchWebcamImage }) => {
+          fetchWebcamImage(d.webcamId).then(img => {
+            const placeholder = this.tooltipEl?.querySelector(`#${previewId}`);
+            if (!placeholder) return;
+            placeholder.replaceChildren();
+            if (img.thumbnailUrl) {
+              const imgEl = document.createElement('img');
+              imgEl.src = img.thumbnailUrl;
+              imgEl.style.cssText = 'width:200px;border-radius:4px;margin-bottom:4px;';
+              imgEl.loading = 'lazy';
+              placeholder.appendChild(imgEl);
+            } else {
+              const span = document.createElement('span');
+              span.style.cssText = 'opacity:.5;font-size:11px;';
+              span.textContent = 'Preview unavailable';
+              placeholder.appendChild(span);
+            }
+          });
+        });
+      }, 0);
+    } else if (d._kind === 'webcam-cluster') {
+      html = `<span style="color:#00d4ff;font-weight:bold;">\u{1F4F7} ${d.count} webcams</span>` +
+             `<br><span style="opacity:.5;font-size:10px;">Loading list...</span>`;
     }
     el.innerHTML = `<div style="padding-right:16px;position:relative;">${closeBtn}${html}</div>`;
     if (d._kind === 'satellite') el.style.maxWidth = '300px';
@@ -1319,8 +1380,51 @@ export class GlobeMap {
 
     this.tooltipEl = el;
     if (this.tooltipHideTimer) clearTimeout(this.tooltipHideTimer);
-    const hideDelay = d._kind === 'satellite' ? 6000 : 3500;
+    const hideDelay = d._kind === 'satellite' ? 6000 : d._kind === 'webcam' ? 8000 : d._kind === 'webcam-cluster' ? 12000 : 3500;
     this.tooltipHideTimer = setTimeout(() => this.hideTooltip(), hideDelay);
+
+    if (d._kind === 'webcam-cluster') {
+      const tooltipEl = el;
+      const margin = 1.5;
+      import('@/services/webcams').then(({ fetchWebcams }) => {
+        fetchWebcams(10, {
+          w: d._lng - margin, s: d._lat - margin,
+          e: d._lng + margin, n: d._lat + margin,
+        }).then(result => {
+          if (!tooltipEl.isConnected) return;
+          const webcams = result.webcams.slice(0, 25);
+          const escStr = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+          const closeBtnHtml = `<button style="position:absolute;top:4px;right:4px;background:none;border:none;color:#888;cursor:pointer;font-size:14px;line-height:1;padding:2px 4px;" aria-label="Close">\u00D7</button>`;
+          const items = webcams.map((w, i) =>
+            `<div class="wm-wc-li" data-i="${i}" style="padding:2px 0;cursor:pointer;color:#aaa;border-bottom:1px solid rgba(255,255,255,0.08);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">`+
+            `${escStr(w.title || w.category || 'Webcam')}<span style="float:right;opacity:0.4;font-size:10px;margin-left:6px;">${escStr(w.country || '')}</span></div>`
+          ).join('');
+          tooltipEl.innerHTML = `<div style="padding-right:16px;position:relative;">${closeBtnHtml}<span style="color:#00d4ff;font-weight:bold;">\u{1F4F7} ${webcams.length} webcams</span><div style="max-height:180px;overflow-y:auto;margin-top:4px;">${items}</div></div>`;
+          tooltipEl.querySelector('button')?.addEventListener('click', () => this.hideTooltip());
+          tooltipEl.querySelectorAll('.wm-wc-li').forEach((item, i) => {
+            const webcam = webcams[i];
+            if (!webcam) return;
+            item.addEventListener('mouseenter', () => { (item as HTMLElement).style.color = '#00d4ff'; });
+            item.addEventListener('mouseleave', () => { (item as HTMLElement).style.color = '#aaa'; });
+            item.addEventListener('click', (e) => {
+              e.stopPropagation();
+              const cr = this.container.getBoundingClientRect();
+              const me = e as MouseEvent;
+              // Phantom anchor so showMarkerTooltip can position relative to click point
+              const phantom = document.createElement('div');
+              phantom.style.cssText = `position:absolute;left:${me.clientX - cr.left}px;top:${me.clientY - cr.top}px;width:1px;height:1px;pointer-events:none;`;
+              this.container.appendChild(phantom);
+              this.showMarkerTooltip({
+                _kind: 'webcam', _lat: webcam.lat, _lng: webcam.lng,
+                webcamId: webcam.webcamId, title: webcam.title,
+                category: webcam.category, country: webcam.country,
+              } as GlobeMarker, phantom);
+              phantom.remove();
+            });
+          });
+        });
+      });
+    }
   }
 
   private hideTooltip(): void {
@@ -1413,9 +1517,43 @@ export class GlobeMap {
           this.flushLayerChannels(layer);
           this.onLayerChangeCb?.(layer, checked, 'user');
           this.enforceLayerLimit();
+          // Show/hide webcam marker-mode sub-row when webcam layer is toggled
+          if (layer === 'webcams') {
+            const modeRow = el.querySelector('.webcam-mode-row') as HTMLElement | null;
+            if (modeRow) modeRow.style.display = checked ? '' : 'none';
+          }
         }
       });
     });
+
+    // ── Webcam marker-mode sub-toggle ────────────────────────────────────────
+    const webcamToggleEl = el.querySelector('.layer-toggle[data-layer="webcams"]') as HTMLElement | null;
+    if (webcamToggleEl) {
+      const modeRow = document.createElement('div');
+      modeRow.className = 'webcam-mode-row';
+      modeRow.style.cssText = 'display:none;padding:2px 6px 4px 24px;font-size:10px;color:#aaa;';
+      const currentMode = (): string => localStorage.getItem('wm-webcam-marker-mode') || 'icon';
+      const renderModeLabel = (): string => currentMode() === 'emoji' ? '&#128247; icon mode' : '&#128512; emoji mode';
+      const modeBtn = document.createElement('button');
+      modeBtn.style.cssText = 'background:rgba(0,212,255,0.1);border:1px solid rgba(0,212,255,0.3);color:#00d4ff;font-size:10px;padding:1px 6px;border-radius:3px;cursor:pointer;margin-left:2px;';
+      modeBtn.title = 'Toggle webcam marker style';
+      modeBtn.innerHTML = renderModeLabel();
+      modeBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const next = currentMode() === 'icon' ? 'emoji' : 'icon';
+        localStorage.setItem('wm-webcam-marker-mode', next);
+        modeBtn.innerHTML = renderModeLabel();
+        this.flushMarkers();
+      });
+      const modeLabel = document.createElement('span');
+      modeLabel.textContent = 'Marker: ';
+      modeRow.appendChild(modeLabel);
+      modeRow.appendChild(modeBtn);
+      webcamToggleEl.insertAdjacentElement('afterend', modeRow);
+      // Show immediately if webcam layer is already enabled
+      if (this.layers.webcams) modeRow.style.display = '';
+    }
+
     this.enforceLayerLimit();
 
     bindLayerSearch(el);
@@ -1510,6 +1648,7 @@ export class GlobeMap {
       markers.push(...this.cableAdvisoryMarkers);
       markers.push(...this.repairShipMarkers);
     }
+    if (this.layers.webcams) markers.push(...this.webcamMarkers);
     markers.push(...this.newsLocationMarkers);
     markers.push(...this.flashMarkers);
 
@@ -1863,6 +2002,7 @@ export class GlobeMap {
     ['satellites',        { markers: true,  arcs: false, paths: true,  polygons: true }],
 
     ['natural',           { markers: true,  arcs: false, paths: true,  polygons: true }],
+    ['webcams',           { markers: true,  arcs: false, paths: false, polygons: false }],
   ]);
 
   private flushLayerChannels(layer: keyof MapLayers): void {
@@ -2353,6 +2493,15 @@ export class GlobeMap {
       region: f.region ?? '',
       brightness: f.brightness ?? 330,
     }));
+    this.flushMarkers();
+  }
+  public setWebcams(markers: Array<any>): void {
+    this.webcamMarkers = markers.map(m => {
+      if ('count' in m) {
+        return { _kind: 'webcam-cluster' as const, _lat: m.lat, _lng: m.lng, count: m.count, categories: m.categories || [] };
+      }
+      return { _kind: 'webcam' as const, _lat: m.lat, _lng: m.lng, webcamId: m.webcamId, title: m.title, category: m.category || 'other', country: m.country || '' };
+    });
     this.flushMarkers();
   }
   public setUcdpEvents(events: UcdpGeoEvent[]): void {

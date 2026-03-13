@@ -466,6 +466,7 @@ export class DataLoaderManager implements AppModule {
     if (SITE_VARIANT !== 'happy' && !isDesktopRuntime()) tasks.push({ name: 'iranAttacks', task: runGuarded('iranAttacks', () => this.loadIranEvents()) });
     if (SITE_VARIANT !== 'happy' && (this.ctx.mapLayers.techEvents || SITE_VARIANT === 'tech')) tasks.push({ name: 'techEvents', task: runGuarded('techEvents', () => this.loadTechEvents()) });
     if (SITE_VARIANT !== 'happy' && this.ctx.mapLayers.satellites && this.ctx.map?.isGlobeMode?.()) tasks.push({ name: 'satellites', task: runGuarded('satellites', () => this.loadSatellites()) });
+    if (SITE_VARIANT !== 'happy' && this.ctx.mapLayers.webcams) tasks.push({ name: 'webcams', task: runGuarded('webcams', () => this.loadWebcams()) });
 
     if (SITE_VARIANT !== 'happy') {
       tasks.push({ name: 'techReadiness', task: runGuarded('techReadiness', () => (this.ctx.panels['tech-readiness'] as TechReadinessPanel)?.refresh()) });
@@ -565,6 +566,9 @@ export class DataLoaderManager implements AppModule {
           this.loadImageryFootprints();
           break;
         }
+        case 'webcams':
+          await this.loadWebcams();
+          break;
         case 'ucdpEvents':
         case 'displacement':
         case 'climate':
@@ -2006,6 +2010,31 @@ export class DataLoaderManager implements AppModule {
       this.ctx.statusPanel?.updateApi('ACLED', { status: 'error' });
       this.ctx.statusPanel?.updateApi('GDELT Doc', { status: 'error' });
       dataFreshness.recordError('gdelt_doc', String(error));
+    }
+  }
+
+  async loadWebcams(): Promise<void> {
+    if (!this.ctx.map) return;
+    try {
+      const map = this.ctx.map;
+      const zoom = map.getState().zoom ?? 3;
+      const bboxStr = map.getBbox();
+      // Fall back to full world bbox if map can't provide one (SVG mode, or map not ready)
+      const parts = bboxStr ? bboxStr.split(',').map(Number) : [-180, -90, 180, 90];
+      const w = parts[0] ?? -180;
+      const s = parts[1] ?? -90;
+      const e = parts[2] ?? 180;
+      const n = parts[3] ?? 90;
+
+      const { fetchWebcams } = await import('@/services/webcams');
+      const result = await fetchWebcams(zoom, { w, s, e, n });
+
+      const allMarkers = [...result.webcams, ...result.clusters];
+      map.setWebcams(allMarkers);
+      map.setLayerReady('webcams', allMarkers.length > 0);
+    } catch (err) {
+      console.warn('[data-loader] webcams failed:', err);
+      this.ctx.map?.setLayerReady('webcams', false);
     }
   }
 

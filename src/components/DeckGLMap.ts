@@ -341,6 +341,7 @@ export class DeckGLMap {
   private happinessSource = '';
   private speciesRecoveryZones: Array<SpeciesRecovery & { recoveryZone: { name: string; lat: number; lon: number } }> = [];
   private renewableInstallations: RenewableInstallation[] = [];
+  private webcamData: any[] = [];
   private countriesGeoJsonData: FeatureCollection<Geometry> | null = null;
   private conflictZoneGeoJson: GeoJSON.FeatureCollection | null = null;
 
@@ -1500,6 +1501,19 @@ export class DeckGLMap {
 
     if (mapLayers.satellites && this.imageryScenes.length > 0) {
       layers.push(this.createImageryFootprintLayer());
+    }
+
+    // Webcam layer (server-side clustered markers)
+    if (mapLayers.webcams && this.webcamData.length > 0) {
+      layers.push(new ScatterplotLayer({
+        id: 'webcam-layer',
+        data: this.webcamData,
+        getPosition: (d: any) => [d.lng ?? d.lon ?? 0, d.lat ?? 0],
+        getRadius: (d: any) => ('count' in d ? Math.min(8 + d.count * 0.5, 24) : 6),
+        getFillColor: (d: any) => ('count' in d ? [0, 212, 255, 180] : [255, 215, 0, 200]) as [number, number, number, number],
+        radiusUnits: 'pixels',
+        pickable: true,
+      }));
     }
 
     // News geo-locations (always shown if data exists)
@@ -3457,6 +3471,12 @@ export class DeckGLMap {
         imgHtml += '</div>';
         return { html: imgHtml };
       }
+      case 'webcam-layer': {
+        const label = 'count' in obj
+          ? `${obj.count} webcams`
+          : (obj.title || obj.name || 'Webcam');
+        return { html: `<div class="deckgl-tooltip"><strong>${text(label)}</strong></div>` };
+      }
       default:
         return null;
     }
@@ -4679,6 +4699,11 @@ export class DeckGLMap {
 
   public setClimateAnomalies(anomalies: ClimateAnomaly[]): void {
     this.climateAnomalies = anomalies;
+    this.render();
+  }
+
+  public setWebcams(markers: any[]): void {
+    this.webcamData = markers;
     this.render();
   }
 
