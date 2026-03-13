@@ -27,7 +27,7 @@ export const disasterAdapter: DomainAdapter = {
     for (const q of quakes) {
       const age = now - (q.occurredAt ?? now);
       if (age > windowMs) continue;
-      if (!q.location?.latitude || !q.location?.longitude) continue;
+      if (q.location?.latitude == null || q.location?.longitude == null) continue;
 
       // Severity from magnitude: M2=10, M3=20, M4=35, M5=55, M6=75, M7+=95
       const severity = Math.min(100, Math.max(10, (q.magnitude - 1.5) * 17));
@@ -61,6 +61,8 @@ export const disasterAdapter: DomainAdapter = {
       const age = now - (o.pubDate?.getTime?.() ?? now);
       if (age > windowMs) continue;
       if (o.country && conflictCountries.has(o.country)) continue;
+      // Skip outages with sentinel 0/0 coordinates (no real location)
+      if (o.lat == null || o.lon == null || (o.lat === 0 && o.lon === 0)) continue;
 
       const severityMap: Record<string, number> = { total: 90, major: 70, partial: 40 };
 

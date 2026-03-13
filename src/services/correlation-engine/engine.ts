@@ -142,7 +142,8 @@ export class CorrelationEngine {
         const words = lower.split(/\W+/);
         matchedKey = words.find(w => SINGLE_KEYS.has(w));
       }
-      const key = matchedKey ?? 'general';
+      if (!matchedKey) continue; // drop unmatched signals to avoid false convergence
+      const key = matchedKey;
       const list = tokenMap.get(key) ?? [];
       list.push(s);
       tokenMap.set(key, list);
