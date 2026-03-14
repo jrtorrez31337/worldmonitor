@@ -35,11 +35,6 @@ import type { MapLayers, Hotspot, MilitaryFlight, MilitaryVessel, MilitaryVessel
 import type { Earthquake } from '@/services/earthquakes';
 import type { AirportDelayAlert } from '@/services/aviation';
 import { MapPopup } from './MapPopup';
-import type { PositiveGeoEvent } from '@/services/positive-events-geo';
-import type { KindnessPoint } from '@/services/kindness-data';
-import type { HappinessData } from '@/services/happiness-data';
-import type { SpeciesRecovery } from '@/services/conservation-data';
-import type { RenewableInstallation } from '@/services/renewable-installations';
 import type { MapContainerState, MapView, TimeRange } from './MapContainer';
 import type { CountryClickPayload } from './DeckGLMap';
 import type { WeatherAlert } from '@/services/weather';
@@ -50,6 +45,9 @@ import type { GpsJamHex } from '@/services/gps-interference';
 import type { SatellitePosition } from '@/services/satellites';
 import type { ImageryScene } from '@/generated/server/worldmonitor/imagery/v1/service_server';
 import { isAllowedPreviewUrl } from '@/utils/imagery-preview';
+import { getCategoryStyle } from '@/services/webcams';
+import { pinWebcam, isPinned } from '@/services/webcams/pinned-store';
+import type { WebcamEntry, WebcamCluster } from '@/generated/client/worldmonitor/webcam/v1/service_client';
 
 const SAT_COUNTRY_COLORS: Record<string, string> = { CN: '#ff2020', RU: '#ff8800', US: '#4488ff', EU: '#44cc44', KR: '#aa66ff', IN: '#ff66aa', TR: '#ff4466', OTHER: '#ccccff' };
 const SAT_TYPE_EMOJI: Record<string, string> = { sar: '\u{1F4E1}', optical: '\u{1F4F7}', military: '\u{1F396}', sigint: '\u{1F4FB}' };
@@ -338,31 +336,17 @@ interface ImagerySceneMarker extends BaseMarker {
   mode: string;
   previewUrl: string;
 }
-interface PositiveEventMarker extends BaseMarker {
-  _kind: 'positiveEvent';
-  name: string;
+interface WebcamMarkerData extends BaseMarker {
+  _kind: 'webcam';
+  webcamId: string;
+  title: string;
   category: string;
+  country: string;
+}
+interface WebcamClusterData extends BaseMarker {
+  _kind: 'webcam-cluster';
   count: number;
-}
-interface KindnessMarker extends BaseMarker {
-  _kind: 'kindness';
-  name: string;
-  description: string;
-  intensity: number;
-  type: 'baseline' | 'real';
-}
-interface SpeciesRecoveryMarker extends BaseMarker {
-  _kind: 'speciesRecovery';
-  id: string;
-  commonName: string;
-  recoveryStatus: string;
-}
-interface RenewableInstallationMarker extends BaseMarker {
-  _kind: 'renewableInstallation';
-  id: string;
-  name: string;
-  type: string;
-  capacityMW: number;
+  categories: string[];
 }
 interface GlobePath {
   id: string;
@@ -376,7 +360,7 @@ interface GlobePath {
 interface GlobePolygon {
   coords: number[][][];
   name: string;
-  _kind: 'cii' | 'conflict' | 'imageryFootprint' | 'forecastCone' | 'happiness';
+  _kind: 'cii' | 'conflict' | 'imageryFootprint' | 'forecastCone';
   level?: string;
   score?: number;
 
@@ -399,7 +383,7 @@ type GlobeMarker =
   | EarthquakeMarker | EconomicMarker | DatacenterMarker | WaterwayMarker | MineralMarker
   | FlightDelayMarker | NotamRingMarker | CableAdvisoryMarker | RepairShipMarker | AisDisruptionMarker
   | NewsLocationMarker | FlashMarker | SatelliteMarker | SatFootprintMarker | ImagerySceneMarker
-  | PositiveEventMarker | KindnessMarker | SpeciesRecoveryMarker | RenewableInstallationMarker;
+  | WebcamMarkerData | WebcamClusterData;
 
 interface GlobeControlsLike {
   autoRotate: boolean;
@@ -488,15 +472,9 @@ export class GlobeMap {
   private stormConePolygons: GlobePolygon[] = [];
   private satelliteFootprintMarkers: SatFootprintMarker[] = [];
   private imagerySceneMarkers: ImagerySceneMarker[] = [];
+  private webcamMarkers: (WebcamMarkerData | WebcamClusterData)[] = [];
+  private webcamMarkerMode: string = localStorage.getItem('wm-webcam-marker-mode') || 'icon';
   private imageryFootprintPolygons: GlobePolygon[] = [];
-  private positiveEventMarkers: GlobeMarker[] = [];
-  private kindnessMarkers: GlobeMarker[] = [];
-  private speciesRecoveryMarkers: GlobeMarker[] = [];
-  private renewableInstallationMarkers: GlobeMarker[] = [];
-  private happinessScores: Map<string, number> = new Map();
-  private happinessYear = 0;
-  private happinessSource = '';
-  private hasFocusedOnHappy = false;
   private lastImageryCenter: { lat: number; lon: number } | null = null;
   private imageryFetchTimer: ReturnType<typeof setTimeout> | null = null;
   private imageryFetchVersion = 0;
@@ -548,11 +526,7 @@ export class GlobeMap {
     this.currentView = initialState.view;
 
     this.container.classList.add('globe-mode');
-    this.container.style.position = 'relative';
-    this.container.style.width = '100%';
-    this.container.style.height = '100%';
-    this.container.style.minHeight = '100%';
-    this.container.style.background = '#000';
+    this.container.style.cssText = 'width:100%;height:100%;background:#000;position:relative;';
 
     this.initGlobe().catch(err => {
       console.error('[GlobeMap] Init failed:', err);
@@ -636,8 +610,6 @@ export class GlobeMap {
     if (glCanvas) {
       (glCanvas as HTMLElement).style.cssText =
         'position:absolute;top:0;left:0;width:100% !important;height:100% !important;';
-    } else {
-      console.warn('[GlobeMap] initGlobe no canvas found (will retry on resize).');
     }
 
     // Globe attribution (texture + OpenStreetMap data)
@@ -814,15 +786,6 @@ export class GlobeMap {
       .polygonCapColor((d: GlobePolygon) => {
         if (d._kind === 'cii') return GlobeMap.CII_GLOBE_COLORS[d.level!] ?? 'rgba(0,0,0,0)';
         if (d._kind === 'conflict') return GlobeMap.CONFLICT_CAP[d.intensity!] ?? GlobeMap.CONFLICT_CAP.low;
-        if (d._kind === 'happiness') {
-          const score = (d as any).score as number | undefined;
-          if (score == null) return 'rgba(0,0,0,0)';
-          const t = score / 10;
-          const r = Math.round(40 + (1 - t) * 180);
-          const g = Math.round(180 + t * 60);
-          const b = Math.round(40 + (1 - t) * 100);
-          return `rgba(${r},${g},${b},0.35)`;
-        }
         if (d._kind === 'imageryFootprint') return 'rgba(0,0,0,0)';
         if (d._kind === 'forecastCone') return 'rgba(255,140,60,0.2)';
         return 'rgba(255,60,60,0.15)';
@@ -830,7 +793,6 @@ export class GlobeMap {
       .polygonSideColor((d: GlobePolygon) => {
         if (d._kind === 'cii') return 'rgba(0,0,0,0)';
         if (d._kind === 'conflict') return GlobeMap.CONFLICT_SIDE[d.intensity!] ?? GlobeMap.CONFLICT_SIDE.low;
-        if (d._kind === 'happiness') return 'rgba(70, 170, 70, 0.25)';
         if (d._kind === 'imageryFootprint') return 'rgba(0,0,0,0)';
         if (d._kind === 'forecastCone') return 'rgba(255,140,60,0.1)';
         return 'rgba(255,60,60,0.08)';
@@ -838,7 +800,6 @@ export class GlobeMap {
       .polygonStrokeColor((d: GlobePolygon) => {
         if (d._kind === 'cii') return 'rgba(80,80,80,0.3)';
         if (d._kind === 'conflict') return GlobeMap.CONFLICT_STROKE[d.intensity!] ?? GlobeMap.CONFLICT_STROKE.low;
-        if (d._kind === 'happiness') return 'rgba(70,170,70,0.4)';
         if (d._kind === 'imageryFootprint') return '#00b4ff';
         if (d._kind === 'forecastCone') return 'rgba(255,140,60,0.5)';
         return '#ff4444';
@@ -855,11 +816,6 @@ export class GlobeMap {
           if (d.parties?.length) label += `<br/>Parties: ${d.parties.map(p => escapeHtml(p)).join(', ')}`;
           if (d.casualties) label += `<br/>Casualties: ${escapeHtml(d.casualties)}`;
           return label;
-        }
-        if (d._kind === 'happiness') {
-          const year = this.happinessYear || 'unknown';
-          const source = this.happinessSource ? `Source: ${escapeHtml(this.happinessSource)}` : 'Source unknown';
-          return `<b>${escapeHtml(d.name)}</b><br/>Happiness score: ${d.score?.toFixed(1) ?? 'N/A'}<br/>Year: ${year}<br/>${source}`;
         }
         if (d._kind === 'imageryFootprint') {
           let label = `<span style="color:#00b4ff;font-weight:bold;">&#128752; ${escapeHtml(d.satellite ?? '')}</span>`;
@@ -1161,21 +1117,6 @@ export class GlobeMap {
       const sc = d.severity === 'high' ? '#ff2020' : d.severity === 'elevated' ? '#ff8800' : '#44aaff';
       el.innerHTML = GlobeMap.wrapHit(`<div style="font-size:11px;color:${sc};text-shadow:0 0 4px ${sc}88;">⛴</div>`);
       el.title = d.name;
-    } else if (d._kind === 'positiveEvent') {
-      const color = d.count > 8 ? '#44ff88' : '#88ff44';
-      el.innerHTML = GlobeMap.wrapHit(`<div style="font-size:11px;color:${color};text-shadow:0 0 4px ${color}88;">✨</div>`);
-      el.title = `${d.name} (${d.category})`;
-    } else if (d._kind === 'kindness') {
-      const color = d.type === 'real' ? '#38d6ff' : '#88c8ff';
-      el.innerHTML = GlobeMap.wrapHit(`<div style="font-size:11px;color:${color};text-shadow:0 0 4px ${color}88;">💖</div>`);
-      el.title = `${d.name}`;
-    } else if (d._kind === 'speciesRecovery') {
-      el.innerHTML = GlobeMap.wrapHit(`<div style="font-size:10px;color:#7fff7f;text-shadow:0 0 4px #7fff7f88;">🌿</div>`);
-      el.title = `${d.commonName} (${d.recoveryStatus || 'recovered'})`;
-    } else if (d._kind === 'renewableInstallation') {
-      const icon = d.type === 'wind' ? '🌀' : d.type === 'solar' ? '☀️' : d.type === 'hydro' ? '💧' : '🌋';
-      el.innerHTML = GlobeMap.wrapHit(`<div style="font-size:11px;">${icon}</div>`);
-      el.title = `${d.name} · ${d.type} ${d.capacityMW}MW`;
     } else if (d._kind === 'satellite') {
       const c = SAT_COUNTRY_COLORS[(d as SatelliteMarker).country] || '#ccccff';
       el.innerHTML = `<div class="sat-hit" style="width:16px;height:16px;display:flex;align-items:center;justify-content:center;margin:-8px 0 0 -8px;color:${c}"><div class="sat-dot" style="width:5px;height:5px;border-radius:50%;background:${c};box-shadow:0 0 6px 2px ${c}88;transition:transform .15s,box-shadow .15s;"></div></div>`;
@@ -1188,6 +1129,14 @@ export class GlobeMap {
     } else if (d._kind === 'imageryScene') {
       el.innerHTML = GlobeMap.wrapHit(`<div style="font-size:11px;color:#00b4ff;text-shadow:0 0 4px #00b4ff88;">&#128752;</div>`);
       el.title = `${d.satellite} ${d.datetime}`;
+    } else if (d._kind === 'webcam') {
+      const style = getCategoryStyle(d.category);
+      const emoji = this.webcamMarkerMode === 'emoji' ? style.emoji : '\u{1F4F7}';
+      el.innerHTML = GlobeMap.wrapHit(`<span style="background:${style.color}33;border:1px solid ${style.color}88;border-radius:10px;padding:1px 5px;font-size:12px;">${emoji}</span>`);
+      el.title = d.title;
+    } else if (d._kind === 'webcam-cluster') {
+      el.innerHTML = GlobeMap.wrapHit(`<span style="background:#00d4ff33;border:1px solid #00d4ff88;border-radius:12px;padding:2px 7px;font-size:11px;font-weight:bold;color:#00d4ff;">${d.count}</span>`);
+      el.title = `${d.count} webcams`;
     } else if (d._kind === 'flash') {
       el.style.pointerEvents = 'none';
       el.innerHTML = `
@@ -1245,6 +1194,11 @@ export class GlobeMap {
       }
     }
 
+    if (d._kind === 'webcam-cluster' && this.globe) {
+      const pov = this.globe.pointOfView();
+      // Fly to cluster and zoom in (reduce altitude by 60%)
+      this.globe.pointOfView({ lat: d._lat, lng: d._lng, altitude: pov.altitude * 0.4 }, 800);
+    }
     this.showMarkerTooltip(d, anchor);
   }
 
@@ -1474,10 +1428,103 @@ export class GlobeMap {
         const safeHref = escapeHtml(new URL(d.previewUrl!).href);
         html += `<br><img src="${safeHref}" referrerpolicy="no-referrer" style="max-width:180px;max-height:120px;margin-top:4px;border-radius:4px;" class="imagery-preview">`;
       }
+    } else if (d._kind === 'webcam') {
+      html = '';
+    } else if (d._kind === 'webcam-cluster') {
+      html = '';
     }
     el.innerHTML = `<div style="padding-right:16px;position:relative;">${closeBtn}${html}</div>`;
     if (d._kind === 'satellite') el.style.maxWidth = '300px';
     el.querySelector('button')?.addEventListener('click', () => this.hideTooltip());
+
+    if (d._kind === 'webcam') {
+      const wrapper = el.firstElementChild!;
+      const titleSpan = document.createElement('span');
+      titleSpan.style.cssText = 'color:#00d4ff;font-weight:bold;';
+      titleSpan.textContent = `\u{1F4F7} ${d.title.slice(0, 50)}`;
+      wrapper.appendChild(titleSpan);
+
+      const metaSpan = document.createElement('span');
+      metaSpan.style.cssText = 'display:block;opacity:.7;font-size:11px;';
+      metaSpan.textContent = `${d.country} \u00B7 ${d.category}`;
+      wrapper.appendChild(metaSpan);
+
+      const previewDiv = document.createElement('div');
+      previewDiv.style.marginTop = '4px';
+      const loadingSpan = document.createElement('span');
+      loadingSpan.style.cssText = 'opacity:.5;font-size:11px;';
+      loadingSpan.textContent = 'Loading preview...';
+      previewDiv.appendChild(loadingSpan);
+      wrapper.appendChild(previewDiv);
+
+      const link = document.createElement('a');
+      link.href = `https://www.windy.com/webcams/${encodeURIComponent(d.webcamId)}`;
+      link.target = '_blank';
+      link.rel = 'noopener';
+      link.style.cssText = 'display:block;color:#00d4ff;font-size:11px;text-decoration:none;';
+      link.textContent = 'Open on Windy \u2197';
+      wrapper.appendChild(link);
+
+      const attribution = document.createElement('div');
+      attribution.style.cssText = 'opacity:.4;font-size:9px;margin-top:4px;';
+      attribution.textContent = 'Powered by Windy';
+      wrapper.appendChild(attribution);
+
+      import('@/services/webcams').then(({ fetchWebcamImage }) => {
+        fetchWebcamImage(d.webcamId).then(img => {
+          if (!el.isConnected) return;
+          previewDiv.replaceChildren();
+          if (img.thumbnailUrl) {
+            const imgEl = document.createElement('img');
+            imgEl.src = img.thumbnailUrl;
+            imgEl.style.cssText = 'width:200px;border-radius:4px;margin-bottom:4px;';
+            imgEl.loading = 'lazy';
+            previewDiv.appendChild(imgEl);
+          } else {
+            const span = document.createElement('span');
+            span.style.cssText = 'opacity:.5;font-size:11px;';
+            span.textContent = 'Preview unavailable';
+            previewDiv.appendChild(span);
+          }
+          const pinBtn = document.createElement('button');
+          pinBtn.className = 'webcam-pin-btn';
+          pinBtn.style.cssText = 'display:block;margin-top:4px;';
+          if (isPinned(d.webcamId)) {
+            pinBtn.classList.add('webcam-pin-btn--pinned');
+            pinBtn.textContent = '\u{1F4CC} Pinned';
+            pinBtn.disabled = true;
+          } else {
+            pinBtn.textContent = '\u{1F4CC} Pin';
+            pinBtn.addEventListener('click', (e) => {
+              e.stopPropagation();
+              pinWebcam({
+                webcamId: d.webcamId,
+                title: d.title || img.title || '',
+                lat: d._lat,
+                lng: d._lng,
+                category: d.category || 'other',
+                country: d.country || '',
+                playerUrl: img.playerUrl || '',
+              });
+              pinBtn.classList.add('webcam-pin-btn--pinned');
+              pinBtn.textContent = '\u{1F4CC} Pinned';
+              pinBtn.disabled = true;
+            });
+          }
+          wrapper.appendChild(pinBtn);
+        });
+      });
+    } else if (d._kind === 'webcam-cluster') {
+      const wrapper = el.firstElementChild!;
+      const header = document.createElement('span');
+      header.style.cssText = 'color:#00d4ff;font-weight:bold;';
+      header.textContent = `\u{1F4F7} ${d.count} webcams`;
+      wrapper.appendChild(header);
+      const loadingSpan = document.createElement('span');
+      loadingSpan.style.cssText = 'display:block;opacity:.5;font-size:10px;';
+      loadingSpan.textContent = 'Loading list...';
+      wrapper.appendChild(loadingSpan);
+    }
     el.addEventListener('mouseenter', () => {
       if (this.tooltipHideTimer) { clearTimeout(this.tooltipHideTimer); this.tooltipHideTimer = null; }
     });
@@ -1503,8 +1550,79 @@ export class GlobeMap {
 
     this.tooltipEl = el;
     if (this.tooltipHideTimer) clearTimeout(this.tooltipHideTimer);
-    const hideDelay = d._kind === 'satellite' ? 6000 : 3500;
+    const hideDelay = d._kind === 'satellite' ? 6000 : d._kind === 'webcam' ? 8000 : d._kind === 'webcam-cluster' ? 12000 : 3500;
     this.tooltipHideTimer = setTimeout(() => this.hideTooltip(), hideDelay);
+
+    if (d._kind === 'webcam-cluster') {
+      const tooltipEl = el;
+      const alt = this.globe?.pointOfView()?.altitude ?? 2.0;
+      const approxZoom = alt >= 2.0 ? 2 : alt >= 1.0 ? 4 : alt >= 0.5 ? 6 : 8;
+      import('@/services/webcams').then(({ fetchWebcams, getClusterCellSize }) => {
+        const margin = Math.max(0.5, getClusterCellSize(approxZoom));
+        fetchWebcams(10, {
+          w: d._lng - margin, s: d._lat - margin,
+          e: d._lng + margin, n: d._lat + margin,
+        }).then(result => {
+          if (!tooltipEl.isConnected) return;
+          const webcams = result.webcams.slice(0, 20);
+
+          const wrapper = document.createElement('div');
+          wrapper.style.cssText = 'padding-right:16px;position:relative;';
+
+          const closeBtn2 = document.createElement('button');
+          closeBtn2.style.cssText = 'position:absolute;top:4px;right:4px;background:none;border:none;color:#888;cursor:pointer;font-size:14px;line-height:1;padding:2px 4px;';
+          closeBtn2.setAttribute('aria-label', 'Close');
+          closeBtn2.textContent = '\u00D7';
+          closeBtn2.addEventListener('click', () => this.hideTooltip());
+          wrapper.appendChild(closeBtn2);
+
+          const headerSpan = document.createElement('span');
+          headerSpan.style.cssText = 'color:#00d4ff;font-weight:bold;';
+          headerSpan.textContent = `\u{1F4F7} ${webcams.length} webcams`;
+          wrapper.appendChild(headerSpan);
+
+          const listDiv = document.createElement('div');
+          listDiv.style.cssText = 'max-height:180px;overflow-y:auto;margin-top:4px;';
+
+          for (const webcam of webcams) {
+            const item = document.createElement('div');
+            item.style.cssText = 'padding:2px 0;cursor:pointer;color:#aaa;border-bottom:1px solid rgba(255,255,255,0.08);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;';
+
+            const nameSpan = document.createElement('span');
+            nameSpan.textContent = webcam.title || webcam.category || 'Webcam';
+            item.appendChild(nameSpan);
+
+            if (webcam.country) {
+              const countrySpan = document.createElement('span');
+              countrySpan.style.cssText = 'float:right;opacity:0.4;font-size:10px;margin-left:6px;';
+              countrySpan.textContent = webcam.country;
+              item.appendChild(countrySpan);
+            }
+
+            item.addEventListener('mouseenter', () => { item.style.color = '#00d4ff'; });
+            item.addEventListener('mouseleave', () => { item.style.color = '#aaa'; });
+            item.addEventListener('click', (e) => {
+              e.stopPropagation();
+              const cr = this.container.getBoundingClientRect();
+              const me = e as MouseEvent;
+              const phantom = document.createElement('div');
+              phantom.style.cssText = `position:absolute;left:${me.clientX - cr.left}px;top:${me.clientY - cr.top}px;width:1px;height:1px;pointer-events:none;`;
+              this.container.appendChild(phantom);
+              this.showMarkerTooltip({
+                _kind: 'webcam', _lat: webcam.lat, _lng: webcam.lng,
+                webcamId: webcam.webcamId, title: webcam.title,
+                category: webcam.category, country: webcam.country,
+              } as GlobeMarker, phantom);
+              phantom.remove();
+            });
+            listDiv.appendChild(item);
+          }
+
+          wrapper.appendChild(listDiv);
+          tooltipEl.replaceChildren(wrapper);
+        });
+      });
+    }
   }
 
   private hideTooltip(): void {
@@ -1598,9 +1716,44 @@ export class GlobeMap {
           this.flushLayerChannels(layer);
           this.onLayerChangeCb?.(layer, checked, 'user');
           this.enforceLayerLimit();
+          // Show/hide webcam marker-mode sub-row when webcam layer is toggled
+          if (layer === 'webcams') {
+            const modeRow = el.querySelector('.webcam-mode-row') as HTMLElement | null;
+            if (modeRow) modeRow.style.display = checked ? '' : 'none';
+          }
         }
       });
     });
+
+    // ── Webcam marker-mode sub-toggle ────────────────────────────────────────
+    const webcamToggleEl = el.querySelector('.layer-toggle[data-layer="webcams"]') as HTMLElement | null;
+    if (webcamToggleEl) {
+      const modeRow = document.createElement('div');
+      modeRow.className = 'webcam-mode-row';
+      modeRow.style.cssText = 'display:none;padding:2px 6px 4px 24px;font-size:10px;color:#aaa;';
+      const currentMode = (): string => localStorage.getItem('wm-webcam-marker-mode') || 'icon';
+      const renderModeLabel = (): string => currentMode() === 'emoji' ? '&#128247; icon mode' : '&#128512; emoji mode';
+      const modeBtn = document.createElement('button');
+      modeBtn.style.cssText = 'background:rgba(0,212,255,0.1);border:1px solid rgba(0,212,255,0.3);color:#00d4ff;font-size:10px;padding:1px 6px;border-radius:3px;cursor:pointer;margin-left:2px;';
+      modeBtn.title = 'Toggle webcam marker style';
+      modeBtn.innerHTML = renderModeLabel();
+      modeBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const next = currentMode() === 'icon' ? 'emoji' : 'icon';
+        localStorage.setItem('wm-webcam-marker-mode', next);
+        this.webcamMarkerMode = next;
+        modeBtn.innerHTML = renderModeLabel();
+        this.flushMarkers();
+      });
+      const modeLabel = document.createElement('span');
+      modeLabel.textContent = 'Marker: ';
+      modeRow.appendChild(modeLabel);
+      modeRow.appendChild(modeBtn);
+      webcamToggleEl.insertAdjacentElement('afterend', modeRow);
+      // Show immediately if webcam layer is already enabled
+      if (this.layers.webcams) modeRow.style.display = '';
+    }
+
     this.enforceLayerLimit();
 
     bindLayerSearch(el);
@@ -1691,23 +1844,18 @@ export class GlobeMap {
       markers.push(...this.satelliteFootprintMarkers);
       markers.push(...this.imagerySceneMarkers);
     }
-    if (this.layers.positiveEvents) markers.push(...this.positiveEventMarkers);
-    if (this.layers.kindness) markers.push(...this.kindnessMarkers);
-    if (this.layers.speciesRecovery) markers.push(...this.speciesRecoveryMarkers);
-    if (this.layers.renewableInstallations) markers.push(...this.renewableInstallationMarkers);
     if (this.layers.techEvents) markers.push(...this.techMarkers);
     if (this.layers.cables) {
       markers.push(...this.cableAdvisoryMarkers);
       markers.push(...this.repairShipMarkers);
     }
+    if (this.layers.webcams) markers.push(...this.webcamMarkers);
     markers.push(...this.newsLocationMarkers);
     markers.push(...this.flashMarkers);
 
     try {
       this.globe.htmlElementsData(markers);
-    } catch (err) {
-      if (import.meta.env.DEV) console.warn('[GlobeMap] flush error', err);
-    }
+    } catch (err) { if (import.meta.env.DEV) console.warn('[GlobeMap] flush error', err); }
   }
 
   private flushArcs(): void {
@@ -1796,22 +1944,6 @@ export class GlobeMap {
         const name = (feat.properties?.name as string) ?? code;
         for (const ring of rings) {
           polys.push({ coords: ring, name, _kind: 'cii', level: entry.level, score: entry.score });
-        }
-      }
-    }
-
-    if (this.layers.happiness && this.countriesGeoData && this.happinessScores.size > 0) {
-      for (const feat of this.countriesGeoData.features) {
-        const code = feat.properties?.['ISO3166-1-Alpha-2'] as string | undefined;
-        if (!code) continue;
-        const score = this.happinessScores.get(code);
-        if (score == null) continue;
-        const geom = feat.geometry;
-        if (!geom) continue;
-        const rings = geom.type === 'Polygon' ? [geom.coordinates] : geom.type === 'MultiPolygon' ? geom.coordinates : [];
-        const name = (feat.properties?.name as string) ?? code;
-        for (const ring of rings) {
-          polys.push({ coords: ring, name, _kind: 'happiness', score });
         }
       }
     }
@@ -2141,14 +2273,14 @@ export class GlobeMap {
 
   private static readonly LAYER_CHANNELS: Map<string, { markers: boolean; arcs: boolean; paths: boolean; polygons: boolean }> = new Map([
     ['ciiChoropleth', { markers: false, arcs: false, paths: false, polygons: true }],
-    ['happiness',     { markers: false, arcs: false, paths: false, polygons: true }],
     ['tradeRoutes',   { markers: false, arcs: true,  paths: false, polygons: false }],
     ['pipelines',     { markers: false, arcs: false, paths: true,  polygons: false }],
     ['conflicts',     { markers: true,  arcs: false, paths: false, polygons: true }],
     ['cables',        { markers: true,  arcs: false, paths: true,  polygons: false }],
-    ['satellites',    { markers: true,  arcs: false, paths: true,  polygons: true }],
+    ['satellites',        { markers: true,  arcs: false, paths: true,  polygons: true }],
 
-    ['natural',       { markers: true,  arcs: false, paths: true,  polygons: true }],
+    ['natural',           { markers: true,  arcs: false, paths: true,  polygons: true }],
+    ['webcams',           { markers: true,  arcs: false, paths: false, polygons: false }],
   ]);
 
   private flushLayerChannels(layer: keyof MapLayers): void {
@@ -2264,6 +2396,19 @@ export class GlobeMap {
     if (!this.globe) return null;
     const pov = this.globe.pointOfView();
     return pov ? { lat: pov.lat, lon: pov.lng } : null;
+  }
+
+  public getBbox(): string | null {
+    if (!this.globe) return null;
+    const pov = this.globe.pointOfView();
+    if (!pov) return null;
+    const alt = pov.altitude ?? 2.0;
+    const R = Math.min(90, Math.max(5, alt * 30));
+    const south = Math.max(-90, pov.lat - R);
+    const north = Math.min(90, pov.lat + R);
+    const west = Math.max(-180, pov.lng - R);
+    const east = Math.min(180, pov.lng + R);
+    return `${west.toFixed(4)},${south.toFixed(4)},${east.toFixed(4)},${north.toFixed(4)}`;
   }
 
   // ─── Resize ────────────────────────────────────────────────────────────────
@@ -2600,122 +2745,11 @@ export class GlobeMap {
       }));
     this.flushMarkers();
   }
-  public setPositiveEvents(events: PositiveGeoEvent[]): void {
-    this.positiveEventMarkers = (events ?? []).map(e => ({
-      _kind: 'positiveEvent' as const,
-      _lat: e.lat,
-      _lng: e.lon,
-      name: e.name,
-      category: e.category,
-      count: e.count,
-    }));
-    this.flushMarkers();
-    this.focusOnHappyData();
-  }
-
-  public setKindnessData(points: KindnessPoint[]): void {
-    this.kindnessMarkers = (points ?? []).map(p => ({
-      _kind: 'kindness' as const,
-      _lat: p.lat,
-      _lng: p.lon,
-      name: p.name,
-      description: p.description,
-      intensity: p.intensity,
-      type: p.type,
-    }));
-    this.flushMarkers();
-    this.focusOnHappyData();
-  }
-
-  public setHappinessScores(data: HappinessData): void {
-    this.happinessScores = new Map(Object.entries(data.scores || {}));
-    this.happinessYear = data.year;
-    this.happinessSource = data.source;
-    this.flushPolygons();
-    this.focusOnHappyData();
-  }
-
-  private focusOnHappyData(): void {
-    if (!this.globe || !this.initialized || this.destroyed || this.webglLost) return;
-    if (this.hasFocusedOnHappy) return;
-
-    const pointSources: Array<{ lat: number; lng: number }> = [
-      ...this.positiveEventMarkers,
-      ...this.kindnessMarkers,
-      ...this.speciesRecoveryMarkers,
-      ...this.renewableInstallationMarkers,
-    ]
-      .filter(m => m._lat != null && m._lng != null)
-      .map(m => ({ lat: m._lat, lng: m._lng }));
-
-    let minLat = Number.POSITIVE_INFINITY;
-    let maxLat = Number.NEGATIVE_INFINITY;
-    let minLng = Number.POSITIVE_INFINITY;
-    let maxLng = Number.NEGATIVE_INFINITY;
-
-    for (const p of pointSources) {
-      minLat = Math.min(minLat, p.lat);
-      maxLat = Math.max(maxLat, p.lat);
-      minLng = Math.min(minLng, p.lng);
-      maxLng = Math.max(maxLng, p.lng);
-    }
-
-    if (this.layers.happiness && this.happinessScores.size > 0 && this.countriesGeoData) {
-      for (const feat of this.countriesGeoData.features) {
-        const code = feat.properties?.['ISO3166-1-Alpha-2'] as string | undefined;
-        if (!code || !this.happinessScores.has(code)) continue;
-        const bbox = getCountryBbox(code);
-        if (!bbox) continue;
-        const [cMinLng, cMinLat, cMaxLng, cMaxLat] = bbox;
-        minLat = Math.min(minLat, cMinLat);
-        maxLat = Math.max(maxLat, cMaxLat);
-        minLng = Math.min(minLng, cMinLng);
-        maxLng = Math.max(maxLng, cMaxLng);
-      }
-    }
-
-    if (!Number.isFinite(minLat) || !Number.isFinite(minLng)) return;
-
-    const centerLat = (minLat + maxLat) / 2;
-    const centerLng = (minLng + maxLng) / 2;
-    const latSpan = Math.max(0.5, maxLat - minLat);
-    const lngSpan = Math.max(0.5, maxLng - minLng);
-    const span = Math.max(latSpan, lngSpan);
-    const altitude = Math.min(2.5, Math.max(0.8, span * 0.03 + 0.8));
-
-    this.globe.pointOfView({ lat: centerLat, lng: centerLng, altitude }, 1200);
-    this.hasFocusedOnHappy = true;
-  }
-
-  public setSpeciesRecoveryZones(zones: SpeciesRecovery[]): void {
-    this.speciesRecoveryMarkers = (zones ?? [])
-      .filter(z => z.recoveryZone && z.recoveryZone.lat != null && z.recoveryZone.lon != null)
-      .map(z => ({
-        _kind: 'speciesRecovery' as const,
-        _lat: z.recoveryZone!.lat,
-        _lng: z.recoveryZone!.lon,
-        id: z.id,
-        commonName: z.commonName,
-        recoveryStatus: z.recoveryStatus,
-      } as any));
-    this.flushMarkers();
-    this.focusOnHappyData();
-  }
-
-  public setRenewableInstallations(installations: RenewableInstallation[]): void {
-    this.renewableInstallationMarkers = (installations ?? []).map(i => ({
-      _kind: 'renewableInstallation' as const,
-      _lat: i.lat,
-      _lng: i.lon,
-      id: i.id,
-      name: i.name,
-      type: i.type,
-      capacityMW: i.capacityMW,
-    }));
-    this.flushMarkers();
-    this.focusOnHappyData();
-  }
-
+  public setPositiveEvents(_events: any[]): void {}
+  public setKindnessData(_points: any[]): void {}
+  public setHappinessScores(_data: any): void {}
+  public setSpeciesRecoveryZones(_zones: any[]): void {}
+  public setRenewableInstallations(_installations: any[]): void {}
   public setCyberThreats(threats: CyberThreat[]): void {
     this.cyberMarkers = (threats ?? []).filter(t => t.lat != null && t.lon != null).map(t => ({
       _kind: 'cyber' as const,
@@ -2750,6 +2784,15 @@ export class GlobeMap {
       region: f.region ?? '',
       brightness: f.brightness ?? 330,
     }));
+    this.flushMarkers();
+  }
+  public setWebcams(markers: Array<WebcamEntry | WebcamCluster>): void {
+    this.webcamMarkers = markers.map(m => {
+      if ('count' in m) {
+        return { _kind: 'webcam-cluster' as const, _lat: m.lat, _lng: m.lng, count: m.count, categories: m.categories || [] };
+      }
+      return { _kind: 'webcam' as const, _lat: m.lat, _lng: m.lng, webcamId: m.webcamId, title: m.title, category: m.category || 'other', country: m.country || '' };
+    });
     this.flushMarkers();
   }
   public setUcdpEvents(events: UcdpGeoEvent[]): void {
