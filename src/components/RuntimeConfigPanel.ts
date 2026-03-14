@@ -18,6 +18,7 @@ import {
 import { invokeTauri } from '@/services/tauri-bridge';
 import { escapeHtml } from '@/utils/sanitize';
 import { isDesktopRuntime } from '@/services/runtime';
+import { fetchOllamaModels as fetchOllamaModelsFromService } from '@/services/ollama-models';
 import { t } from '@/services/i18n';
 import { trackFeatureToggle } from '@/services/analytics';
 import { SIGNUP_URLS, PLAINTEXT_KEYS, MASKED_SENTINEL } from '@/services/settings-constants';
@@ -490,13 +491,6 @@ export class RuntimeConfigPanel extends Panel {
     }
   }
 
-  private static makeTimeout(ms: number): AbortSignal {
-    if (typeof AbortSignal.timeout === 'function') return AbortSignal.timeout(ms);
-    const ctrl = new AbortController();
-    setTimeout(() => ctrl.abort(), ms);
-    return ctrl.signal;
-  }
-
   private showManualModelInput(select: HTMLSelectElement): void {
     const manual = select.parentElement?.querySelector<HTMLInputElement>('input[data-model-manual]');
     if (!manual) return;
@@ -529,31 +523,7 @@ export class RuntimeConfigPanel extends Panel {
       || '';
 
     try {
-      // Try Ollama-native /api/tags first, fall back to OpenAI-compatible /v1/models
-      let models: string[] = [];
-      try {
-        const res = await fetch(new URL('/api/tags', ollamaUrl).toString(), {
-          signal: RuntimeConfigPanel.makeTimeout(5000),
-        });
-        if (res.ok) {
-          const data = await res.json() as { models?: Array<{ name: string }> };
-          models = (data.models?.map(m => m.name) || []).filter(n => !n.includes('embed'));
-        }
-      } catch { /* Ollama endpoint not available, try OpenAI format */ }
-
-      if (!select.isConnected) return;
-
-      if (models.length === 0) {
-        try {
-          const res = await fetch(new URL('/v1/models', ollamaUrl).toString(), {
-            signal: RuntimeConfigPanel.makeTimeout(5000),
-          });
-          if (res.ok) {
-            const data = await res.json() as { data?: Array<{ id: string }> };
-            models = (data.data?.map(m => m.id) || []).filter(n => !n.includes('embed'));
-          }
-        } catch { /* OpenAI endpoint also unavailable */ }
-      }
+      const models = await fetchOllamaModelsFromService(ollamaUrl);
 
       if (!select.isConnected) return;
 
