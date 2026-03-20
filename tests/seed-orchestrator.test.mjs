@@ -4,6 +4,7 @@ import { createLogger } from '../scripts/seed-utils/logger.mjs';
 import { parseFreshness, isFresh, buildMeta } from '../scripts/seed-utils/meta.mjs';
 import { forkSeeder } from '../scripts/seed-utils/runner.mjs';
 import { SEED_CATALOG, TIER_ORDER, TIER_CONCURRENCY, STEADY_STATE_CONCURRENCY } from '../scripts/seed-config.mjs';
+import { classifySeeders, buildStartupSummary } from '../scripts/seed-orchestrator.mjs';
 
 describe('logger', () => {
   it('prefixes messages with the given name', () => {
@@ -165,5 +166,44 @@ describe('seed-config', () => {
       const filePath = path.join(process.cwd(), 'scripts', `seed-${name}.mjs`);
       assert.ok(fs.existsSync(filePath), `${name}: missing file seed-${name}.mjs`);
     }
+  });
+});
+
+describe('orchestrator', () => {
+  describe('classifySeeders', () => {
+    it('splits seeders into active and skipped based on env vars', () => {
+      const catalog = {
+        'earthquakes': { tier: 'warm', intervalMin: 30, ttlSec: 3600, ttlSource: 'source', requiredKeys: [], metaKey: 'seismology:earthquakes' },
+        'market-quotes': { tier: 'hot', intervalMin: 10, ttlSec: 1800, ttlSource: 'source', requiredKeys: ['FINNHUB_API_KEY'], metaKey: 'market:quotes' },
+        'economy': { tier: 'warm', intervalMin: 30, ttlSec: 3600, ttlSource: 'source', requiredKeys: ['FRED_API_KEY'], metaKey: 'economic:energy-prices' },
+      };
+      const env = { FRED_API_KEY: 'test' };
+      const { active, skipped } = classifySeeders(catalog, env);
+
+      assert.equal(active.length, 2); // earthquakes + economy
+      assert.equal(skipped.length, 1); // market-quotes
+      assert.ok(skipped[0].name === 'market-quotes');
+      assert.ok(skipped[0].reason.includes('FINNHUB_API_KEY'));
+      assert.ok(active.some(s => s.name === 'earthquakes'));
+      assert.ok(active.some(s => s.name === 'economy'));
+    });
+  });
+
+  describe('buildStartupSummary', () => {
+    it('returns formatted summary string', () => {
+      const active = [
+        { name: 'earthquakes', tier: 'warm' },
+        { name: 'weather-alerts', tier: 'hot' },
+      ];
+      const skipped = [
+        { name: 'market-quotes', reason: 'missing FINNHUB_API_KEY' },
+      ];
+      const summary = buildStartupSummary(active, skipped, 1);
+      assert.ok(summary.includes('ACTIVE (2)'));
+      assert.ok(summary.includes('SKIPPED (1)'));
+      assert.ok(summary.includes('market-quotes'));
+      assert.ok(summary.includes('FINNHUB_API_KEY'));
+      assert.ok(summary.includes('1/2 seeders have fresh data'));
+    });
   });
 });
