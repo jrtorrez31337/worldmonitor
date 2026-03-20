@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import { createLogger } from '../scripts/seed-utils/logger.mjs';
+import { parseFreshness, isFresh, buildMeta } from '../scripts/seed-utils/meta.mjs';
 
 describe('logger', () => {
   it('prefixes messages with the given name', () => {
@@ -22,5 +23,64 @@ describe('logger', () => {
     const log = createLogger('orchestrator', { write: (msg) => lines.push(msg) });
     log.info('starting...');
     assert.match(lines[0], /\[orchestrator\] starting\.\.\./);
+  });
+});
+
+describe('meta', () => {
+  describe('parseFreshness', () => {
+    it('parses valid seed-meta object (from redisGet which returns parsed JSON)', () => {
+      const obj = { fetchedAt: 1000, recordCount: 50, sourceVersion: 'v1' };
+      const result = parseFreshness(obj);
+      assert.equal(result.fetchedAt, 1000);
+      assert.equal(result.recordCount, 50);
+    });
+
+    it('parses valid seed-meta string', () => {
+      const raw = JSON.stringify({ fetchedAt: 1000, recordCount: 50, sourceVersion: 'v1' });
+      const result = parseFreshness(raw);
+      assert.equal(result.fetchedAt, 1000);
+    });
+
+    it('returns null for missing data', () => {
+      assert.equal(parseFreshness(null), null);
+      assert.equal(parseFreshness(''), null);
+      assert.equal(parseFreshness(undefined), null);
+    });
+
+    it('returns null for objects without fetchedAt', () => {
+      assert.equal(parseFreshness({ recordCount: 5 }), null);
+    });
+  });
+
+  describe('isFresh', () => {
+    it('returns true when data is within interval', () => {
+      const meta = { fetchedAt: Date.now() - 60_000 }; // 1 min ago
+      assert.equal(isFresh(meta, 5), true);              // 5 min interval
+    });
+
+    it('returns false when data is stale', () => {
+      const meta = { fetchedAt: Date.now() - 600_000 }; // 10 min ago
+      assert.equal(isFresh(meta, 5), false);              // 5 min interval
+    });
+
+    it('returns false for null meta', () => {
+      assert.equal(isFresh(null, 5), false);
+    });
+  });
+
+  describe('buildMeta', () => {
+    it('builds success meta', () => {
+      const meta = buildMeta(2340, 'ok');
+      assert.equal(meta.status, 'ok');
+      assert.equal(meta.durationMs, 2340);
+      assert.ok(meta.fetchedAt > 0);
+      assert.equal(meta.error, undefined);
+    });
+
+    it('builds error meta with message', () => {
+      const meta = buildMeta(5200, 'error', 'HTTP 429');
+      assert.equal(meta.status, 'error');
+      assert.equal(meta.error, 'HTTP 429');
+    });
   });
 });
