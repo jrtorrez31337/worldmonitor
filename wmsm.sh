@@ -385,7 +385,124 @@ cmd_schedule() {
 }
 
 cmd_refresh() {
-  echo "TODO: refresh $*"
+  local target="${1:-}"
+
+  if [ -z "$target" ]; then
+    echo "❌ Usage: ./wmsm.sh refresh <name> or ./wmsm.sh refresh --all"
+    exit 1
+  fi
+
+  if [ "$target" = "--all" ]; then
+    cmd_refresh_all
+    return
+  fi
+
+  # Validate seeder name
+  local found=false
+  for entry in "${CATALOG[@]}"; do
+    local name="${entry%%|*}"
+    if [ "$name" = "$target" ]; then
+      found=true
+      break
+    fi
+  done
+
+  if [ "$found" = false ]; then
+    echo "❌ Unknown seeder: $target"
+    local suggestion
+    suggestion=$(suggest_seeder "$target")
+    if [ -n "$suggestion" ]; then
+      echo "💡 Did you mean: $suggestion?"
+    fi
+    exit 1
+  fi
+
+  header
+  echo "🔄 Refreshing $target..."
+  local start_sec
+  start_sec=$(date +%s)
+
+  if docker exec "$CONTAINER" node "scripts/seed-${target}.mjs"; then
+    local dur=$(( $(date +%s) - start_sec ))
+    echo "   ✅ Done in ${dur}s"
+  else
+    local code=$?
+    local dur=$(( $(date +%s) - start_sec ))
+    echo "   ❌ Failed (exit code $code) in ${dur}s"
+    exit 1
+  fi
+}
+
+cmd_refresh_all() {
+  header
+  echo "🔄 Refreshing all seeders (tiered)..."
+  echo
+
+  local total_ok=0 total_err=0 total_skip=0
+
+  for tier_order in hot warm cold frozen; do
+    # Get concurrency for this tier
+    local concurrency=3
+    for tc in "${TIER_CONCURRENCY[@]}"; do
+      IFS='|' read -r t c <<< "$tc"
+      if [ "$t" = "$tier_order" ]; then concurrency=$c; break; fi
+    done
+
+    # Get tier icon
+    local icon=""
+    for ti in "${TIER_ICONS[@]}"; do
+      IFS='|' read -r t i l <<< "$ti"
+      if [ "$t" = "$tier_order" ]; then icon="$i"; break; fi
+    done
+
+    # Collect seeders for this tier
+    local tier_seeders=()
+    for entry in "${CATALOG[@]}"; do
+      IFS='|' read -r name tier interval_min ttl_sec meta_key <<< "$entry"
+      if [ "$tier" = "$tier_order" ]; then
+        tier_seeders+=("$name")
+      fi
+    done
+
+    (( ${#tier_seeders[@]} == 0 )) && continue
+
+    echo "$icon ${tier_order^^} (${#tier_seeders[@]} seeders, $concurrency at a time)"
+
+    # Run in batches
+    local idx=0
+    while (( idx < ${#tier_seeders[@]} )); do
+      local pids=() names=() starts=()
+      local batch_size=0
+      while (( batch_size < concurrency && idx < ${#tier_seeders[@]} )); do
+        local sname="${tier_seeders[$idx]}"
+        local start_sec
+        start_sec=$(date +%s)
+        docker exec "$CONTAINER" node "scripts/seed-${sname}.mjs" >/dev/null 2>&1 &
+        pids+=($!)
+        names+=("$sname")
+        starts+=("$start_sec")
+        (( idx++ )) || true
+        (( batch_size++ )) || true
+      done
+
+      # Wait for batch
+      for i in "${!pids[@]}"; do
+        if wait "${pids[$i]}" 2>/dev/null; then
+          local dur=$(( $(date +%s) - ${starts[$i]} ))
+          echo "   ✅ ${names[$i]} (${dur}s)"
+          (( total_ok++ )) || true
+        else
+          local dur=$(( $(date +%s) - ${starts[$i]} ))
+          echo "   ❌ ${names[$i]} (${dur}s)"
+          (( total_err++ )) || true
+        fi
+      done
+    done
+    echo
+  done
+
+  footer_line
+  echo "Done: $total_ok ✅  $total_err ❌  $total_skip ⏭️"
 }
 
 cmd_flush() {
