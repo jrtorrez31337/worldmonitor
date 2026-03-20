@@ -24,7 +24,9 @@ import { loadEnvFile, CHROME_UA } from './_seed-utils.mjs';
 
 loadEnvFile(import.meta.url);
 
-const API_BASE = 'https://api.worldmonitor.app';
+const API_BASE = process.env.LOCAL_API_MODE === 'docker'
+  ? `http://localhost:${process.env.LOCAL_API_PORT || 46123}`
+  : 'https://api.worldmonitor.app';
 const TIMEOUT = 30_000;
 
 async function warmPing(name, path, body = {}) {

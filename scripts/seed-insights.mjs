@@ -187,7 +187,9 @@ function categorizeStory(title) {
 }
 
 async function warmDigestCache() {
-  const apiBase = process.env.API_BASE_URL || 'https://api.worldmonitor.app';
+  const apiBase = process.env.API_BASE_URL
+  || (process.env.LOCAL_API_MODE === 'docker' ? `http://localhost:${process.env.LOCAL_API_PORT || 46123}` : null)
+  || 'https://api.worldmonitor.app';
   try {
     const resp = await fetch(`${apiBase}/api/news/v1/list-feed-digest?variant=full&lang=en`, {
       headers: { 'User-Agent': CHROME_UA },
