@@ -21,6 +21,22 @@ import {
 } from './seed-config.mjs';
 import { getRedisCredentials } from './_seed-utils.mjs';
 
+/**
+ * Dry-run mock seeder — simulates a seeder with random sleep and 10% failure rate.
+ * Used when SEED_TURBO=dry.
+ */
+async function dryRunSeeder(name) {
+  const sleepMs = 100 + Math.random() * 400;
+  await new Promise((r) => setTimeout(r, sleepMs));
+  const fail = Math.random() < 0.1;
+  return {
+    name,
+    exitCode: fail ? 1 : 0,
+    status: fail ? 'error' : 'ok',
+    durationMs: Math.round(sleepMs),
+  };
+}
+
 // ────────────────────────────────────────────────────────────────────────────
 // Thin Redis helpers — use the same REST API as _seed-utils.mjs's private
 // redisGet/redisSet but scoped to orchestrator needs. We reuse
@@ -58,7 +74,7 @@ async function redisSet(url, token, key, value, ttlSeconds) {
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const log = createLogger('orchestrator');
 
-const RETRY_DELAY_MS = 60_000;
+let RETRY_DELAY_MS = 60_000;
 const MAX_CONSECUTIVE_FAILURES = 5;
 const SHUTDOWN_TIMEOUT_MS = 15_000;
 const REDIS_PING_INTERVAL_MS = 3_000;
@@ -220,58 +236,65 @@ function resolveMetaKey(seeder) {
 /**
  * Execute a single seeder: fork the child process, handle meta writing.
  */
-async function executeSeed(seeder, url, token) {
+async function executeSeed(seeder, url, token, turboMode) {
   const scriptPath = join(__dirname, `seed-${seeder.name}.mjs`);
   log.info(`Running ${seeder.name}...`);
 
   // Read meta before fork so we can detect if the seeder updated it
   let metaBefore = null;
   const metaKey = resolveMetaKey(seeder);
-  try {
-    metaBefore = await redisGet(url, token, metaKey);
-  } catch {
-    // ignore
+  if (turboMode !== 'dry') {
+    try {
+      metaBefore = await redisGet(url, token, metaKey);
+    } catch {
+      // ignore
+    }
   }
 
-  const result = await forkSeeder(seeder.name, {
-    scriptPath: process.execPath,
-    args: [scriptPath],
-    timeoutMs: 120_000,
-  });
+  const timeoutMs = turboMode === 'dry' ? 30_000 : 120_000;
+  const result = turboMode === 'dry'
+    ? await dryRunSeeder(seeder.name)
+    : await forkSeeder(seeder.name, {
+        scriptPath: process.execPath,
+        args: [scriptPath],
+        timeoutMs,
+      });
 
   log.info(`${seeder.name} finished: ${result.status} (${result.durationMs}ms)`);
 
-  // Meta writing logic
-  if (result.status === 'ok') {
-    if (seeder.metaKey) {
-      // Check if the seeder already updated its own meta
-      try {
-        const metaAfter = await redisGet(url, token, metaKey);
-        const parsed = parseFreshness(metaAfter);
-        const parsedBefore = parseFreshness(metaBefore);
-        const alreadyUpdated =
-          parsed &&
-          parsedBefore &&
-          parsed.fetchedAt > parsedBefore.fetchedAt;
-        const freshlyWritten = parsed && !parsedBefore;
-        if (!alreadyUpdated && !freshlyWritten) {
-          // Seeder didn't update meta — write it ourselves
-          const meta = buildMeta(result.durationMs, 'ok');
-          await redisSet(url, token, metaKey, meta, 86400 * 7);
+  // Meta writing logic (skip in dry mode)
+  if (turboMode !== 'dry') {
+    if (result.status === 'ok') {
+      if (seeder.metaKey) {
+        // Check if the seeder already updated its own meta
+        try {
+          const metaAfter = await redisGet(url, token, metaKey);
+          const parsed = parseFreshness(metaAfter);
+          const parsedBefore = parseFreshness(metaBefore);
+          const alreadyUpdated =
+            parsed &&
+            parsedBefore &&
+            parsed.fetchedAt > parsedBefore.fetchedAt;
+          const freshlyWritten = parsed && !parsedBefore;
+          if (!alreadyUpdated && !freshlyWritten) {
+            // Seeder didn't update meta — write it ourselves
+            const meta = buildMeta(result.durationMs, 'ok');
+            await redisSet(url, token, metaKey, meta, 86400 * 7);
+          }
+        } catch {
+          // Best effort
         }
-      } catch {
-        // Best effort
+      } else {
+        // metaKey is null — always write orchestrator meta
+        const meta = buildMeta(result.durationMs, 'ok');
+        await redisSet(url, token, metaKey, meta, 86400 * 7);
       }
     } else {
-      // metaKey is null — always write orchestrator meta
-      const meta = buildMeta(result.durationMs, 'ok');
-      await redisSet(url, token, metaKey, meta, 86400 * 7);
-    }
-  } else {
-    // Write error meta for null-metaKey seeders
-    if (!seeder.metaKey) {
-      const meta = buildMeta(result.durationMs, 'error', `exit ${result.exitCode ?? result.status}`);
-      await redisSet(url, token, metaKey, meta, 86400 * 7);
+      // Write error meta for null-metaKey seeders
+      if (!seeder.metaKey) {
+        const meta = buildMeta(result.durationMs, 'error', `exit ${result.exitCode ?? result.status}`);
+        await redisSet(url, token, metaKey, meta, 86400 * 7);
+      }
     }
   }
 
@@ -295,7 +318,7 @@ async function runBatch(seeders, concurrency, executeFn) {
  * Run tiered cold start: process tiers in order with tier-specific concurrency.
  * Skip seeders that already have fresh data.
  */
-async function tieredColdStart(activeSeeders, freshnessMap, url, token) {
+async function tieredColdStart(activeSeeders, freshnessMap, url, token, turboMode) {
   log.info('Starting tiered cold start...');
 
   for (const tier of TIER_ORDER) {
@@ -314,7 +337,7 @@ async function tieredColdStart(activeSeeders, freshnessMap, url, token) {
     const concurrency = TIER_CONCURRENCY[tier];
     log.info(`Tier ${tier}: running ${stale.length} stale seeders (concurrency ${concurrency})`);
 
-    await runBatch(stale, concurrency, (s) => executeSeed(s, url, token));
+    await runBatch(stale, concurrency, (s) => executeSeed(s, url, token, turboMode));
   }
 
   log.info('Tiered cold start complete');
@@ -342,7 +365,7 @@ function scheduleSeeders(activeSeeders, url, token, state) {
   async function runScheduled(seeder) {
     inFlight.add(seeder.name);
     try {
-      const result = await executeSeed(seeder, url, token);
+      const result = await executeSeed(seeder, url, token, state.turboMode);
 
       if (result.status === 'ok') {
         failureCounts.set(seeder.name, 0);
@@ -359,7 +382,7 @@ function scheduleSeeders(activeSeeders, url, token, state) {
             if (inFlight.has(seeder.name)) return; // overlap protection on retry too
             inFlight.add(seeder.name);
             try {
-              const retryResult = await executeSeed(seeder, url, token);
+              const retryResult = await executeSeed(seeder, url, token, state.turboMode);
               if (retryResult.status === 'ok') {
                 failureCounts.set(seeder.name, 0);
               } else {
@@ -462,11 +485,29 @@ function setupShutdown(state) {
 async function main() {
   const { url, token } = getRedisCredentials();
 
+  // Turbo mode
+  const turboMode = process.env.SEED_TURBO || undefined;
+  if (turboMode && turboMode !== 'real' && turboMode !== 'dry') {
+    log.error(`Invalid SEED_TURBO value: ${turboMode} (expected: real, dry)`);
+    process.exit(1);
+  }
+  if (turboMode) {
+    log.info(`⚡ TURBO MODE: ${turboMode} (intervals ÷20${turboMode === 'dry' ? ', no real seeders' : ''})`);
+    RETRY_DELAY_MS = 3_000;
+  }
+
   // Wait for Redis to be reachable
   await waitForRedis(url, token);
 
   // Classify seeders
   const { active, skipped } = classifySeeders(SEED_CATALOG);
+
+  // Apply turbo interval compression
+  if (turboMode) {
+    for (const s of active) {
+      s.intervalMin = computeTurboInterval(s.intervalMin, turboMode);
+    }
+  }
 
   // Fetch freshness for all active seeders
   const freshnessMap = await fetchFreshnessMap(active, url, token);
@@ -480,7 +521,7 @@ async function main() {
   log.info(summary);
 
   // Tiered cold start
-  await tieredColdStart(active, freshnessMap, url, token);
+  await tieredColdStart(active, freshnessMap, url, token, turboMode);
 
   // Set up recurring scheduling
   const state = {
@@ -489,6 +530,7 @@ async function main() {
     failureCounts: new Map(),
     queue: [],
     shuttingDown: false,
+    turboMode,
   };
 
   setupShutdown(state);
