@@ -41,6 +41,26 @@ services:
       NASA_FIRMS_API_KEY: "${NASA_FIRMS_API_KEY:-}"
       CLOUDFLARE_API_TOKEN: "${CLOUDFLARE_API_TOKEN:-}"
       AVIATIONSTACK_API: "${AVIATIONSTACK_API:-}"
+      # Seeder API keys — all optional, features degrade gracefully without them
+      WINDY_API_KEY: "${WINDY_API_KEY:-}"
+      COINGECKO_API_KEY: "${COINGECKO_API_KEY:-}"
+      ICAO_API_KEY: "${ICAO_API_KEY:-}"
+      WTO_API_KEY: "${WTO_API_KEY:-}"
+      WINGBITS_API_KEY: "${WINGBITS_API_KEY:-}"
+      OPENSKY_CLIENT_ID: "${OPENSKY_CLIENT_ID:-}"
+      OPENSKY_CLIENT_SECRET: "${OPENSKY_CLIENT_SECRET:-}"
+      OPENSKY_PROXY_AUTH: "${OPENSKY_PROXY_AUTH:-}"
+      OREF_PROXY_AUTH: "${OREF_PROXY_AUTH:-}"
+      UCDP_ACCESS_TOKEN: "${UCDP_ACCESS_TOKEN:-}"
+      ACLED_EMAIL: "${ACLED_EMAIL:-}"
+      ACLED_PASSWORD: "${ACLED_PASSWORD:-}"
+      ABUSEIPDB_API_KEY: "${ABUSEIPDB_API_KEY:-}"
+      OTX_API_KEY: "${OTX_API_KEY:-}"
+      URLHAUS_AUTH_KEY: "${URLHAUS_AUTH_KEY:-}"
+      OLLAMA_API_KEY: "${OLLAMA_API_KEY:-}"
+      OLLAMA_MODEL: "${OLLAMA_MODEL:-}"
+      CLOUDFLARE_R2_ACCOUNT_ID: "${CLOUDFLARE_R2_ACCOUNT_ID:-}"
+      CLOUDFLARE_R2_TOKEN: "${CLOUDFLARE_R2_TOKEN:-}"
     # Docker secrets (recommended for API keys — keeps them out of docker inspect).
     # Create secrets/ dir with one file per key, then uncomment below.
     # See SELF_HOSTING.md or docker-compose.override.yml for details.
@@ -72,7 +92,7 @@ services:
   redis:
     image: docker.io/redis:7-alpine
     container_name: worldmonitor-redis
-    command: redis-server --maxmemory 256mb --maxmemory-policy allkeys-lru
+    command: redis-server --maxmemory ${REDIS_MAXMEMORY:-512mb} --maxmemory-policy allkeys-lru --save 300 10 --save 900 1
     volumes:
       - redis-data:/data
     restart: unless-stopped

@@ -47,6 +47,13 @@ COPY --from=builder /app/api ./api
 # Static data files used by handlers at runtime
 COPY --from=builder /app/data ./data
 
+# Seed scripts + orchestrator + shared utils
+COPY --from=builder /app/scripts ./scripts
+COPY --from=builder /app/shared ./shared
+
+# Node modules needed by seed scripts (e.g. fast-xml-parser for sanctions)
+COPY --from=builder /app/node_modules ./node_modules
+
 # Built frontend static files
 COPY --from=builder /app/dist /usr/share/nginx/html
 
