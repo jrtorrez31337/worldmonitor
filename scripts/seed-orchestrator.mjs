@@ -126,6 +126,41 @@ export function buildStartupSummary(active, skipped, freshCount) {
   return lines.join('\n');
 }
 
+/**
+ * Compute effective interval with turbo mode and failure demotion.
+ * @param {number} intervalMin — base interval from catalog
+ * @param {number} failureCount — consecutive failures for this seeder
+ * @param {string|undefined} turboMode — 'real', 'dry', or undefined
+ * @returns {number} — interval in milliseconds
+ */
+export function getEffectiveInterval(intervalMin, failureCount, turboMode) {
+  const div = turboMode ? 20 : 1;
+  let min = Math.max(1, Math.round(intervalMin / div));
+  if (failureCount >= MAX_CONSECUTIVE_FAILURES) min *= 2;
+  return min * 60_000;
+}
+
+/**
+ * Check if a seeder should skip this cycle (overlap protection).
+ * @param {string} name
+ * @param {Set<string>} inFlight
+ * @returns {boolean}
+ */
+export function shouldSkipCycle(name, inFlight) {
+  return inFlight.has(name);
+}
+
+/**
+ * Compute turbo-adjusted interval in minutes.
+ * @param {number} intervalMin
+ * @param {string|undefined} turboMode
+ * @returns {number}
+ */
+export function computeTurboInterval(intervalMin, turboMode) {
+  if (!turboMode) return intervalMin;
+  return Math.max(1, Math.round(intervalMin / 20));
+}
+
 // ────────────────────────────────────────────────────────────────────────────
 // Orchestrator runtime (only used when executed directly)
 // ────────────────────────────────────────────────────────────────────────────
@@ -292,13 +327,9 @@ async function tieredColdStart(activeSeeders, freshnessMap, url, token) {
 function scheduleSeeders(activeSeeders, url, token, state) {
   const { timers, inFlight, failureCounts, queue } = state;
 
-  function getEffectiveInterval(seeder) {
+  function getInterval(seeder) {
     const failures = failureCounts.get(seeder.name) || 0;
-    let interval = seeder.intervalMin * 60_000;
-    if (failures >= MAX_CONSECUTIVE_FAILURES) {
-      interval *= 2;
-    }
-    return interval;
+    return getEffectiveInterval(seeder.intervalMin, failures, state.turboMode);
   }
 
   function drainQueue() {
@@ -357,7 +388,7 @@ function scheduleSeeders(activeSeeders, url, token, state) {
     const schedule = () => {
       if (state.shuttingDown) return;
 
-      const interval = getEffectiveInterval(seeder);
+      const interval = getInterval(seeder);
       const timer = setTimeout(() => {
         if (state.shuttingDown) return;
 
