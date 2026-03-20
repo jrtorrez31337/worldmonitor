@@ -506,11 +506,60 @@ cmd_refresh_all() {
 }
 
 cmd_flush() {
-  echo "TODO: flush"
+  echo "⚠️  This will delete ALL seed data and metadata from Redis."
+  echo "   The orchestrator will perform a full cold start re-seed."
+  echo
+  read -rp "   Type 'flush' to confirm: " confirm
+  if [ "$confirm" != "flush" ]; then
+    echo "   Cancelled."
+    exit 0
+  fi
+
+  echo
+  echo "🗑️  Flushing seed data..."
+
+  # Delete seed-meta keys
+  local meta_keys
+  meta_keys=$(redis_scan "seed-meta:*")
+  local meta_count=0
+  while IFS= read -r key; do
+    [ -z "$key" ] && continue
+    redis_del "$key"
+    (( meta_count++ )) || true
+  done <<< "$meta_keys"
+  echo "   Deleted $meta_count seed-meta keys"
+
+  # Delete seed-lock keys
+  local lock_keys
+  lock_keys=$(redis_scan "seed-lock:*")
+  local lock_count=0
+  while IFS= read -r key; do
+    [ -z "$key" ] && continue
+    redis_del "$key"
+    (( lock_count++ )) || true
+  done <<< "$lock_keys"
+  echo "   Deleted $lock_count seed-lock keys"
+
+  echo
+  echo "🔄 Restarting orchestrator for cold start..."
+  docker restart "$CONTAINER" >/dev/null 2>&1
+  echo "   ✅ Container restarting — run ./wmsm.sh logs --follow to watch"
 }
 
 cmd_logs() {
-  echo "TODO: logs $*"
+  local mode="${1:---filter}"
+
+  case "$mode" in
+    --follow|-f)
+      docker logs -f "$CONTAINER" 2>&1 | grep --line-buffered '\[orchestrator\]\|\[seed:'
+      ;;
+    --all|-a)
+      docker logs "$CONTAINER" 2>&1
+      ;;
+    *)
+      docker logs "$CONTAINER" 2>&1 | grep '\[orchestrator\]\|\[seed:'
+      ;;
+  esac
 }
 
 # ── Main dispatcher ──────────────────────────────────────────────────────────
