@@ -1,0 +1,271 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# 🌍 World Monitor Seed Manager (wmsm)
+# Homelab CLI for managing the seed orchestrator.
+# Keep CATALOG in sync with scripts/seed-config.mjs
+# ═══════════════════════════════════════════════════════════════════════════════
+
+REDIS_URL="${REDIS_URL:-http://localhost:8079}"
+REDIS_TOKEN="${REDIS_TOKEN:-wm-local-token}"
+CONTAINER="${WM_CONTAINER:-worldmonitor}"
+
+# ── Catalog: name|tier|intervalMin|ttlSec|metaKey ─────────────────────────────
+# metaKey "null" means orchestrator writes seed-meta:orchestrator:{name}
+CATALOG=(
+  # HOT (5-15 min)
+  "weather-alerts|hot|5|900|weather:alerts"
+  "correlation|hot|5|1200|correlation:cards"
+  "prediction-markets|hot|10|1800|prediction:markets"
+  "commodity-quotes|hot|10|1800|market:commodities"
+  "market-quotes|hot|10|1800|market:quotes"
+  "insights|hot|15|1800|news:insights"
+  "military-flights|hot|5|600|military:flights"
+  "conflict-intel|hot|10|900|conflict:acled-intel"
+  # WARM (30-60 min)
+  "earthquakes|warm|30|3600|seismology:earthquakes"
+  "security-advisories|warm|30|7200|intelligence:advisories"
+  "fire-detections|warm|30|7200|wildfire:fires"
+  "natural-events|warm|30|3600|natural:events"
+  "radiation-watch|warm|30|7200|radiation:observations"
+  "airport-delays|warm|30|7200|aviation:faa"
+  "crypto-quotes|warm|30|3600|market:crypto"
+  "stablecoin-markets|warm|30|3600|market:stablecoins"
+  "gulf-quotes|warm|30|3600|market:gulf-quotes"
+  "etf-flows|warm|30|3600|market:etf-flows"
+  "economy|warm|30|3600|economic:energy-prices"
+  "research|warm|30|3600|research:arxiv-hn-trending"
+  "unrest-events|warm|30|3600|unrest:events"
+  "usa-spending|warm|30|3600|economic:spending"
+  "supply-chain-trade|warm|30|3600|supply_chain:shipping"
+  "aviation|warm|30|3600|aviation:ops-news"
+  "internet-outages|warm|15|1800|infra:outages"
+  "infra|warm|30|3600|null"
+  "service-statuses|warm|30|3600|infra:service-statuses"
+  "military-maritime-news|warm|30|3600|null"
+  "sanctions-pressure|warm|30|43200|sanctions:pressure"
+  "forecasts|warm|60|6300|forecast:predictions"
+  # COLD (2-6 hours)
+  "cyber-threats|cold|120|10800|cyber:threats"
+  "climate-anomalies|cold|120|10800|climate:anomalies"
+  "thermal-escalation|cold|120|10800|thermal:escalation"
+  "gdelt-intel|cold|120|86400|intelligence:gdelt-intel"
+  "webcams|cold|360|86400|webcam:cameras:geo"
+  "iran-events|cold|360|172800|conflict:iran-events"
+  # FROZEN (12h-7d)
+  "bis-data|frozen|600|43200|economic:bis"
+  "displacement-summary|frozen|720|86400|displacement:summary"
+  "submarine-cables|frozen|1440|604800|infrastructure:submarine-cables"
+  "military-bases|frozen|1440|604800|null"
+  "ucdp-events|frozen|720|86400|conflict:ucdp-events"
+  "wb-indicators|frozen|720|86400|null"
+)
+
+TIER_ICONS=( "hot|🔥|5-15 min" "warm|🟡|30-60 min" "cold|🧊|2-6 hours" "frozen|🪨|12h-7d" )
+TIER_CONCURRENCY=( "hot|3" "warm|5" "cold|3" "frozen|2" )
+
+# ── Helpers ───────────────────────────────────────────────────────────────────
+
+header() {
+  echo "🌍 World Monitor Seed Manager"
+  echo "══════════════════════════════════════════════════════════════"
+  echo
+}
+
+footer_line() {
+  echo "──────────────────────────────────────────────────────────────"
+}
+
+redis_get() {
+  curl -sf -H "Authorization: Bearer $REDIS_TOKEN" "$REDIS_URL/get/$(python3 -c "import urllib.parse; print(urllib.parse.quote('$1', safe=''))" 2>/dev/null || echo "$1")" 2>/dev/null
+}
+
+redis_scan() {
+  local pattern="$1" cursor="0" all_keys=""
+  while true; do
+    local resp
+    resp=$(curl -sf -H "Authorization: Bearer $REDIS_TOKEN" "$REDIS_URL/scan/$cursor?match=$(python3 -c "import urllib.parse; print(urllib.parse.quote('$pattern', safe=''))" 2>/dev/null || echo "$pattern")&count=200" 2>/dev/null)
+    [ -z "$resp" ] && break
+    cursor=$(echo "$resp" | jq -r '.result[0]')
+    local keys
+    keys=$(echo "$resp" | jq -r '.result[1][]' 2>/dev/null)
+    [ -n "$keys" ] && all_keys="$all_keys"$'\n'"$keys"
+    [ "$cursor" = "0" ] && break
+  done
+  echo "$all_keys" | grep -v '^$' | sort -u
+}
+
+redis_del() {
+  local key="$1"
+  curl -sf -X POST -H "Authorization: Bearer $REDIS_TOKEN" -H "Content-Type: application/json" \
+    -d "[\"DEL\",\"$key\"]" "$REDIS_URL" >/dev/null 2>&1
+}
+
+# Format seconds as human-readable age
+format_age() {
+  local secs=$1
+  if (( secs < 0 )); then echo "just now"
+  elif (( secs < 60 )); then echo "${secs}s ago"
+  elif (( secs < 3600 )); then echo "$(( secs / 60 ))m ago"
+  elif (( secs < 86400 )); then echo "$(( secs / 3600 ))h ago"
+  else echo "$(( secs / 86400 ))d ago"
+  fi
+}
+
+# Format minutes as human-readable interval
+format_interval() {
+  local min=$1
+  if (( min < 60 )); then printf "%3dm" "$min"
+  elif (( min < 1440 )); then printf "%3dh" "$(( min / 60 ))"
+  else printf "%3dd" "$(( min / 1440 ))"
+  fi
+}
+
+# Format seconds as human-readable TTL
+format_ttl() {
+  local secs=$1
+  if (( secs < 3600 )); then printf "%3dm" "$(( secs / 60 ))"
+  elif (( secs < 86400 )); then printf "%3dh" "$(( secs / 3600 ))"
+  else printf "%3dd" "$(( secs / 86400 ))"
+  fi
+}
+
+# Get the seed-meta Redis key for a catalog entry
+get_meta_key() {
+  local name="$1" meta_key="$2"
+  if [ "$meta_key" = "null" ]; then
+    echo "seed-meta:orchestrator:$name"
+  else
+    echo "seed-meta:$meta_key"
+  fi
+}
+
+# Find closest seeder name match for typo correction
+suggest_seeder() {
+  local input="$1" best="" best_score=0
+  for entry in "${CATALOG[@]}"; do
+    local name="${entry%%|*}"
+    if [[ "$name" == *"$input"* ]] || [[ "$input" == *"$name"* ]]; then
+      echo "$name"
+      return
+    fi
+  done
+  # Fallback: longest common substring
+  for entry in "${CATALOG[@]}"; do
+    local name="${entry%%|*}"
+    local score=0
+    for (( i=0; i<${#input}; i++ )); do
+      if [[ "$name" == *"${input:$i:1}"* ]]; then
+        (( score++ ))
+      fi
+    done
+    if (( score > best_score )); then
+      best_score=$score
+      best="$name"
+    fi
+  done
+  echo "$best"
+}
+
+# ── Dependency check ──────────────────────────────────────────────────────────
+
+check_deps() {
+  local missing=()
+  command -v docker >/dev/null 2>&1 || missing+=("docker")
+  command -v curl   >/dev/null 2>&1 || missing+=("curl")
+  command -v jq     >/dev/null 2>&1 || missing+=("jq")
+  if (( ${#missing[@]} > 0 )); then
+    echo "❌ Missing required tools: ${missing[*]}"
+    exit 1
+  fi
+}
+
+check_container() {
+  if ! docker inspect "$CONTAINER" --format '{{.State.Running}}' 2>/dev/null | grep -q true; then
+    echo "❌ Container '$CONTAINER' is not running"
+    echo "   Start it with: docker compose up -d"
+    exit 1
+  fi
+}
+
+check_redis() {
+  if ! curl -sf -H "Authorization: Bearer $REDIS_TOKEN" "$REDIS_URL/ping" >/dev/null 2>&1; then
+    echo "❌ Cannot reach Redis at $REDIS_URL — is the stack running?"
+    exit 1
+  fi
+}
+
+# ── Commands ──────────────────────────────────────────────────────────────────
+
+cmd_help() {
+  cat <<'HELP'
+🌍 World Monitor Seed Manager (wmsm)
+
+Usage: ./wmsm.sh <command> [options]
+
+Commands:
+  status                📊 Show freshness of all seeders
+  schedule              ⏱️  Show the refresh schedule
+  refresh <name>        🔄 Force re-seed a specific seeder
+  refresh --all         🔄 Force re-seed everything (tiered)
+  flush                 🗑️  Wipe all seed data and re-seed from scratch
+  logs [--follow|--all] 📋 Show orchestrator logs
+  help                  ❓ Show this help
+
+Environment:
+  REDIS_URL             Redis REST proxy URL (default: http://localhost:8079)
+  REDIS_TOKEN           Redis REST auth token (default: wm-local-token)
+  WM_CONTAINER          Docker container name (default: worldmonitor)
+HELP
+}
+
+cmd_status() {
+  echo "TODO: status"
+}
+
+cmd_schedule() {
+  echo "TODO: schedule"
+}
+
+cmd_refresh() {
+  echo "TODO: refresh $*"
+}
+
+cmd_flush() {
+  echo "TODO: flush"
+}
+
+cmd_logs() {
+  echo "TODO: logs $*"
+}
+
+# ── Main dispatcher ──────────────────────────────────────────────────────────
+
+main() {
+  local cmd="${1:-help}"
+  shift 2>/dev/null || true
+
+  if [ "$cmd" = "help" ] || [ "$cmd" = "--help" ] || [ "$cmd" = "-h" ]; then
+    cmd_help
+    exit 0
+  fi
+
+  check_deps
+  check_container
+
+  case "$cmd" in
+    status)   check_redis; cmd_status "$@" ;;
+    schedule) check_redis; cmd_schedule "$@" ;;
+    refresh)  check_redis; cmd_refresh "$@" ;;
+    flush)    check_redis; cmd_flush "$@" ;;
+    logs)     cmd_logs "$@" ;;
+    *)
+      echo "❌ Unknown command: $cmd"
+      echo "   Run ./wmsm.sh help for usage"
+      exit 1
+      ;;
+  esac
+}
+
+main "$@"
