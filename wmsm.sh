@@ -221,7 +221,93 @@ HELP
 }
 
 cmd_status() {
-  echo "TODO: status"
+  header
+  local now_ms
+  now_ms=$(date +%s%3N 2>/dev/null || echo "$(date +%s)000")
+  local count_healthy=0 count_stale=0 count_error=0 count_skipped=0
+  local current_tier=""
+
+  for entry in "${CATALOG[@]}"; do
+    IFS='|' read -r name tier interval_min ttl_sec meta_key <<< "$entry"
+    local redis_key
+    redis_key=$(get_meta_key "$name" "$meta_key")
+
+    # Print tier header on tier change
+    if [ "$tier" != "$current_tier" ]; then
+      [ -n "$current_tier" ] && echo
+      current_tier="$tier"
+      local icon="" label=""
+      for ti in "${TIER_ICONS[@]}"; do
+        IFS='|' read -r t i l <<< "$ti"
+        if [ "$t" = "$tier" ]; then icon="$i"; label="$l"; break; fi
+      done
+      echo "$icon ${tier^^} ($label)"
+    fi
+
+    # Fetch seed-meta from Redis
+    local raw
+    raw=$(redis_get "$redis_key" 2>/dev/null) || raw=""
+    local result
+    result=$(echo "$raw" | jq -r '.result // empty' 2>/dev/null) || result=""
+
+    if [ -z "$result" ] || [ "$result" = "null" ]; then
+      # No meta — skipped
+      printf "  ⬚  %-25s no data\n" "$name"
+      (( count_skipped++ )) || true
+      continue
+    fi
+
+    # Parse meta fields (result is a JSON string, so parse it again)
+    local fetched_at record_count duration_ms status_field error_field
+    fetched_at=$(echo "$result" | jq -r '.fetchedAt // 0' 2>/dev/null) || fetched_at=0
+    record_count=$(echo "$result" | jq -r '.recordCount // "-"' 2>/dev/null) || record_count="-"
+    duration_ms=$(echo "$result" | jq -r '.durationMs // 0' 2>/dev/null) || duration_ms=0
+    status_field=$(echo "$result" | jq -r '.status // "ok"' 2>/dev/null) || status_field="ok"
+    error_field=$(echo "$result" | jq -r '.error // empty' 2>/dev/null) || error_field=""
+
+    # Calculate age
+    local age_sec=0
+    if (( fetched_at > 0 )); then
+      age_sec=$(( (${now_ms%???} - fetched_at / 1000) ))
+      (( age_sec < 0 )) && age_sec=0
+    fi
+
+    local age_str
+    age_str=$(format_age "$age_sec")
+    local duration_str
+    if (( duration_ms > 0 )); then
+      duration_str="$(awk "BEGIN {printf \"%.1f\", $duration_ms / 1000}")s"
+    else
+      duration_str="—"
+    fi
+
+    local items_str
+    if [ "$record_count" != "-" ] && [ "$record_count" != "null" ]; then
+      items_str="${record_count} items"
+    else
+      items_str="—"
+    fi
+
+    # Determine status icon
+    local icon
+    local interval_sec=$(( interval_min * 60 ))
+    if [ "$status_field" = "error" ] || [ "$status_field" = "timeout" ]; then
+      icon="❌"
+      (( count_error++ )) || true
+    elif (( age_sec > interval_sec )); then
+      icon="⚠️ "
+      (( count_stale++ )) || true
+    else
+      icon="✅"
+      (( count_healthy++ )) || true
+    fi
+
+    printf "  %s %-25s %-12s %-14s %s\n" "$icon" "$name" "$age_str" "$items_str" "$duration_str"
+  done
+
+  echo
+  footer_line
+  echo "✅ $count_healthy healthy  ⚠️  $count_stale stale  ❌ $count_error error  ⏭️  $count_skipped skipped"
 }
 
 cmd_schedule() {
