@@ -311,7 +311,77 @@ cmd_status() {
 }
 
 cmd_schedule() {
-  echo "TODO: schedule"
+  echo "🌍 World Monitor Seed Manager — Schedule"
+  echo "══════════════════════════════════════════════════════════════"
+  echo
+
+  local now_ms
+  now_ms=$(date +%s%3N 2>/dev/null || echo "$(date +%s)000")
+  local now_sec=${now_ms%???}
+  local count_scheduled=0 count_skipped=0
+  local current_tier=""
+
+  for entry in "${CATALOG[@]}"; do
+    IFS='|' read -r name tier interval_min ttl_sec meta_key <<< "$entry"
+    local redis_key
+    redis_key=$(get_meta_key "$name" "$meta_key")
+
+    # Print tier header on tier change
+    if [ "$tier" != "$current_tier" ]; then
+      [ -n "$current_tier" ] && echo
+      current_tier="$tier"
+      local icon=""
+      for ti in "${TIER_ICONS[@]}"; do
+        IFS='|' read -r t i l <<< "$ti"
+        if [ "$t" = "$tier" ]; then icon="$i"; break; fi
+      done
+      echo "$icon ${tier^^}"
+    fi
+
+    # Fetch seed-meta
+    local raw result fetched_at age_sec
+    raw=$(redis_get "$redis_key" 2>/dev/null) || raw=""
+    result=$(echo "$raw" | jq -r '.result // empty' 2>/dev/null) || result=""
+
+    if [ -z "$result" ] || [ "$result" = "null" ]; then
+      printf "  %-25s every %s   TTL %s   ⏭️  no data\n" "$name" "$(format_interval "$interval_min")" "$(format_ttl "$ttl_sec")"
+      (( count_skipped++ )) || true
+      continue
+    fi
+
+    fetched_at=$(echo "$result" | jq -r '.fetchedAt // 0' 2>/dev/null) || fetched_at=0
+    if (( fetched_at > 0 )); then
+      age_sec=$(( now_sec - fetched_at / 1000 ))
+      (( age_sec < 0 )) && age_sec=0
+    else
+      age_sec=0
+    fi
+
+    local age_str
+    age_str=$(format_age "$age_sec")
+
+    # Calculate next run estimate
+    local interval_sec=$(( interval_min * 60 ))
+    local remaining=$(( interval_sec - age_sec ))
+    local next_str
+    if (( remaining <= 0 )); then
+      next_str="overdue"
+    elif (( remaining < 60 )); then
+      next_str="~${remaining}s"
+    elif (( remaining < 3600 )); then
+      next_str="~$(( remaining / 60 ))m"
+    else
+      next_str="~$(( remaining / 3600 ))h"
+    fi
+
+    printf "  %-25s every %s   TTL %s   last %-12s next %s\n" \
+      "$name" "$(format_interval "$interval_min")" "$(format_ttl "$ttl_sec")" "$age_str" "$next_str"
+    (( count_scheduled++ )) || true
+  done
+
+  echo
+  footer_line
+  echo "⏱️  $count_scheduled scheduled  ⏭️  $count_skipped skipped"
 }
 
 cmd_refresh() {
