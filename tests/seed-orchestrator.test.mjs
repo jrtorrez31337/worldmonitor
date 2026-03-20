@@ -3,6 +3,7 @@ import { describe, it } from 'node:test';
 import { createLogger } from '../scripts/seed-utils/logger.mjs';
 import { parseFreshness, isFresh, buildMeta } from '../scripts/seed-utils/meta.mjs';
 import { forkSeeder } from '../scripts/seed-utils/runner.mjs';
+import { SEED_CATALOG, TIER_ORDER, TIER_CONCURRENCY, STEADY_STATE_CONCURRENCY } from '../scripts/seed-config.mjs';
 
 describe('logger', () => {
   it('prefixes messages with the given name', () => {
@@ -117,5 +118,52 @@ describe('runner', () => {
     });
     assert.equal(result.status, 'timeout');
     assert.equal(result.exitCode, null);
+  });
+});
+
+describe('seed-config', () => {
+  it('exports a catalog with entries for all seed scripts', () => {
+    assert.equal(Object.keys(SEED_CATALOG).length, 42);
+  });
+
+  it('every entry has required fields', () => {
+    for (const [name, cfg] of Object.entries(SEED_CATALOG)) {
+      assert.ok(['hot', 'warm', 'cold', 'frozen'].includes(cfg.tier), `${name}: invalid tier ${cfg.tier}`);
+      assert.ok(typeof cfg.intervalMin === 'number' && cfg.intervalMin > 0, `${name}: invalid intervalMin`);
+      assert.ok(typeof cfg.ttlSec === 'number' && cfg.ttlSec > 0, `${name}: invalid ttlSec`);
+      assert.ok(['source', 'inferred'].includes(cfg.ttlSource), `${name}: invalid ttlSource`);
+      assert.ok(Array.isArray(cfg.requiredKeys), `${name}: requiredKeys must be array`);
+      assert.ok(cfg.metaKey === null || typeof cfg.metaKey === 'string', `${name}: metaKey must be string or null`);
+    }
+  });
+
+  it('intervalMin is always less than ttlSec / 60', () => {
+    for (const [name, cfg] of Object.entries(SEED_CATALOG)) {
+      assert.ok(cfg.intervalMin < cfg.ttlSec / 60, `${name}: intervalMin ${cfg.intervalMin} >= ttlSec/60 ${cfg.ttlSec / 60}`);
+    }
+  });
+
+  it('TIER_ORDER defines execution order', () => {
+    assert.deepEqual(TIER_ORDER, ['hot', 'warm', 'cold', 'frozen']);
+  });
+
+  it('TIER_CONCURRENCY defines concurrency caps', () => {
+    assert.equal(TIER_CONCURRENCY.hot, 3);
+    assert.equal(TIER_CONCURRENCY.warm, 5);
+    assert.equal(TIER_CONCURRENCY.cold, 3);
+    assert.equal(TIER_CONCURRENCY.frozen, 2);
+  });
+
+  it('STEADY_STATE_CONCURRENCY is 5', () => {
+    assert.equal(STEADY_STATE_CONCURRENCY, 5);
+  });
+
+  it('every catalog name matches a seed-*.mjs file', async () => {
+    const fs = await import('node:fs');
+    const path = await import('node:path');
+    for (const name of Object.keys(SEED_CATALOG)) {
+      const filePath = path.join(process.cwd(), 'scripts', `seed-${name}.mjs`);
+      assert.ok(fs.existsSync(filePath), `${name}: missing file seed-${name}.mjs`);
+    }
   });
 });
